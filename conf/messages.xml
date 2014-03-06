@@ -4,6 +4,11 @@
  <!-- messages from modem or sim to server -->
  <class name="telemetry">
 
+	<!-- control loop test messages REMOVE -->
+   <message name="CONTROL_TEST" id="214">
+     <field name="beta_f" type="float" unit="rad"/>
+   </message>
+	
    <message name="BOOT" id="1">
      <field name="version" type="uint16"/>
    </message>
