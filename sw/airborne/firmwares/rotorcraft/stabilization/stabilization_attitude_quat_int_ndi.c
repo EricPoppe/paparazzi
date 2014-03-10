@@ -29,6 +29,7 @@ float test;
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
+#include "stabilization_attitude_quat_int_ndi.h"
 
 #include <stdio.h>
 #include "math/pprz_algebra_float.h"
@@ -39,23 +40,23 @@ float test;
 #include "std.h"
 #include <stdlib.h>
 
-struct Int32AttitudeGains stabilization_gains = {
-  {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
-  {STABILIZATION_ATTITUDE_PHI_DGAIN, STABILIZATION_ATTITUDE_THETA_DGAIN, STABILIZATION_ATTITUDE_PSI_DGAIN },
-  {STABILIZATION_ATTITUDE_PHI_DDGAIN, STABILIZATION_ATTITUDE_THETA_DDGAIN, STABILIZATION_ATTITUDE_PSI_DDGAIN },
-  {STABILIZATION_ATTITUDE_PHI_IGAIN, STABILIZATION_ATTITUDE_THETA_IGAIN, STABILIZATION_ATTITUDE_PSI_IGAIN }
+//struct Int32AttitudeGains stabilization_gains = {
+//  {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
+//  {STABILIZATION_ATTITUDE_PHI_DGAIN, STABILIZATION_ATTITUDE_THETA_DGAIN, STABILIZATION_ATTITUDE_PSI_DGAIN },
+//  {STABILIZATION_ATTITUDE_PHI_DDGAIN, STABILIZATION_ATTITUDE_THETA_DDGAIN, STABILIZATION_ATTITUDE_PSI_DDGAIN },
+//  {STABILIZATION_ATTITUDE_PHI_IGAIN, STABILIZATION_ATTITUDE_THETA_IGAIN, STABILIZATION_ATTITUDE_PSI_IGAIN }
+//};
+
+struct Int32NDIAttitudeGains attitude_gains = {
+	{STABILIZATION_ATTITUDE_TILT_PGAIN, STABILIZATION_ATTITUDE_YAW_PGAIN},
+	{STABILIZATION_ATTITUDE_TILT_DGAIN,STABILIZATION_ATTITUDE_YAW_DGAIN}
 };
 
 /* warn if some gains are still negative */
-#if (STABILIZATION_ATTITUDE_PHI_PGAIN < 0) ||   \
-  (STABILIZATION_ATTITUDE_THETA_PGAIN < 0) ||   \
-  (STABILIZATION_ATTITUDE_PSI_PGAIN < 0)   ||   \
-  (STABILIZATION_ATTITUDE_PHI_DGAIN < 0)   ||   \
-  (STABILIZATION_ATTITUDE_THETA_DGAIN < 0) ||   \
-  (STABILIZATION_ATTITUDE_PSI_DGAIN < 0)   ||   \
-  (STABILIZATION_ATTITUDE_PHI_IGAIN < 0)   ||   \
-  (STABILIZATION_ATTITUDE_THETA_IGAIN < 0) ||   \
-  (STABILIZATION_ATTITUDE_PSI_IGAIN  < 0)
+#if (STABILIZATION_ATTITUDE_TILT_PGAIN < 0) ||   \
+  (STABILIZATION_ATTITUDE_YAW_PGAIN < 0) ||   \
+  (STABILIZATION_ATTITUDE_TILT_DGAIN < 0)   ||   \
+  (STABILIZATION_ATTITUDE_YAW_DGAIN < 0)
 #warning "ALL control gains are now positive!!!"
 #endif
 
@@ -197,33 +198,62 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
 #define OFFSET_AND_ROUND(_a, _b) (((_a)+(1<<((_b)-1)))>>(_b))
 #define OFFSET_AND_ROUND2(_a, _b) (((_a)+(1<<((_b)-1))-((_a)<0?1:0))>>(_b))
 
-static void attitude_run_ff(int32_t ff_commands[], struct Int32AttitudeGains *gains, struct Int32Rates *ref_accel)
+//static void attitude_run_ff(int32_t ff_commands[], struct Int32AttitudeGains *gains, struct Int32Rates *ref_accel)
+//{
+//  /* Compute feedforward based on reference acceleration */
+//
+//  ff_commands[COMMAND_ROLL]  = GAIN_PRESCALER_FF * gains->dd.x * RATE_FLOAT_OF_BFP(ref_accel->p) / (1 << 7);
+//  ff_commands[COMMAND_PITCH] = GAIN_PRESCALER_FF * gains->dd.y * RATE_FLOAT_OF_BFP(ref_accel->q) / (1 << 7);
+//  ff_commands[COMMAND_YAW]   = GAIN_PRESCALER_FF * gains->dd.z * RATE_FLOAT_OF_BFP(ref_accel->r) / (1 << 7);
+//}
+//
+//static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *gains, struct Int32Quat *att_err,
+//    struct Int32Rates *rate_err, struct Int32Quat *sum_err)
+//{
+//  /*  PID feedback */
+//  fb_commands[COMMAND_ROLL] =
+//    GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
+//    GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
+//    GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
+//
+//  fb_commands[COMMAND_PITCH] =
+//    GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
+//    GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
+//    GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
+//
+//  fb_commands[COMMAND_YAW] =
+//    GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
+//    GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
+//    GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
+//
+//}
+
+static void attitude_run_fb(int32_t fb_commands[], struct Int32NDIAttitudeGains *gains, int32_t *alpha, int32_t *beta,
+    int32_t *psi, struct Int32Rates *rate_err)
 {
-  /* Compute feedforward based on reference acceleration */
+	/* Sin and cos of beta for proportional tilt command distribution */
+	int32_t cbeta;
+	int32_t sbeta;
+	PPRZ_ITRIG_COS(cbeta,*beta)
+	PPRZ_ITRIG_SIN(sbeta,*beta)
 
-  ff_commands[COMMAND_ROLL]  = GAIN_PRESCALER_FF * gains->dd.x * RATE_FLOAT_OF_BFP(ref_accel->p) / (1 << 7);
-  ff_commands[COMMAND_PITCH] = GAIN_PRESCALER_FF * gains->dd.y * RATE_FLOAT_OF_BFP(ref_accel->q) / (1 << 7);
-  ff_commands[COMMAND_YAW]   = GAIN_PRESCALER_FF * gains->dd.z * RATE_FLOAT_OF_BFP(ref_accel->r) / (1 << 7);
-}
+    /*  Proportional tilt angle feedback */
+	int32_t tilt_pcmd;
+	tilt_pcmd = GAIN_PRESCALER_P * gains->p.tilt  * ANGLE_FLOAT_OF_BFP(*alpha) / 4;
 
-static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *gains, struct Int32Quat *att_err,
-    struct Int32Rates *rate_err, struct Int32Quat *sum_err)
-{
-  /*  PID feedback */
-  fb_commands[COMMAND_ROLL] =
-    GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
-    GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
-    GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
+	/*  Derivative p and q angular rates feedback */
+	int32_t p_dcmd;
+	int32_t q_dcmd;
+	p_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->p) / 16;
+	q_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->q) / 16;
 
-  fb_commands[COMMAND_PITCH] =
-    GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
-    GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
-    GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
+	/* Distribution over roll and pitch command by using attitude error axis direction beta */
+	fb_commands[COMMAND_ROLL] = tilt_pcmd * TRIG_FLOAT_OF_BFP(cbeta) + p_dcmd;
+	fb_commands[COMMAND_PITCH] = tilt_pcmd * TRIG_FLOAT_OF_BFP(sbeta) + q_dcmd;
 
-  fb_commands[COMMAND_YAW] =
-    GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
-    GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
-    GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
+	fb_commands[COMMAND_YAW] =
+    GAIN_PRESCALER_P * gains->p.yaw  * ANGLE_FLOAT_OF_BFP(*psi) / 4 +
+    GAIN_PRESCALER_D * gains->d.yaw  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16;
 
 }
 
@@ -248,7 +278,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
   /* Split error => roll and pitch separate from yaw */
 
-	/* Find tilt angle error alpha */
+	/* Find tilt error angle alpha */
 	int32_t arg_acos;
 	arg_acos = (1<<2*INT32_QUAT_FRAC) - 2*(att_err.qx*att_err.qx + att_err.qy*att_err.qy);
 
@@ -258,7 +288,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 	alpha_f = acosf(QUAT1_FLOAT_OF_BFP(QUAT1_FLOAT_OF_BFP(arg_acos)));
 	alpha = ANGLE_BFP_OF_REAL(alpha_f);
 
-	/* Find tilt angle axis direction beta */
+	/* Find tilt error angle axis direction beta and yaw error angle psi */
 
 	/* TODO: atan2, sin and cos in BFP, current available functions are not precise enough */
 	int32_t beta, psi, cpsi_2, spsi_2, salpha_2;
@@ -295,7 +325,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 	beta_f = atan2f(ry,rx);
 	beta = ANGLE_BFP_OF_REAL(beta_f);
 	}
-	test = beta_f;
+
   /*  rate error                */
   const struct Int32Rates rate_ref_scaled = {
     OFFSET_AND_ROUND(stab_att_ref_rate.p, (REF_RATE_FRAC - INT32_RATE_FRAC)),
@@ -305,34 +335,34 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   struct Int32Rates* body_rate = stateGetBodyRates_i();
   RATES_DIFF(rate_err, rate_ref_scaled, (*body_rate));
 
-  /* integrated error */
-  if (enable_integrator) {
-    struct Int32Quat new_sum_err, scaled_att_err;
-    /* update accumulator */
-    scaled_att_err.qi = att_err.qi;
-    scaled_att_err.qx = att_err.qx / IERROR_SCALE;
-    scaled_att_err.qy = att_err.qy / IERROR_SCALE;
-    scaled_att_err.qz = att_err.qz / IERROR_SCALE;
-    INT32_QUAT_COMP(new_sum_err, stabilization_att_sum_err_quat, scaled_att_err);
-    INT32_QUAT_NORMALIZE(new_sum_err);
-    QUAT_COPY(stabilization_att_sum_err_quat, new_sum_err);
-    INT32_EULERS_OF_QUAT(stabilization_att_sum_err, stabilization_att_sum_err_quat);
-  } else {
-    /* reset accumulator */
-    INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
-    INT_EULERS_ZERO( stabilization_att_sum_err );
-  }
+//  /* integrated error */
+//  if (enable_integrator) {
+//    struct Int32Quat new_sum_err, scaled_att_err;
+//    /* update accumulator */
+//    scaled_att_err.qi = att_err.qi;
+//    scaled_att_err.qx = att_err.qx / IERROR_SCALE;
+//    scaled_att_err.qy = att_err.qy / IERROR_SCALE;
+//    scaled_att_err.qz = att_err.qz / IERROR_SCALE;
+//    INT32_QUAT_COMP(new_sum_err, stabilization_att_sum_err_quat, scaled_att_err);
+//    INT32_QUAT_NORMALIZE(new_sum_err);
+//    QUAT_COPY(stabilization_att_sum_err_quat, new_sum_err);
+//    INT32_EULERS_OF_QUAT(stabilization_att_sum_err, stabilization_att_sum_err_quat);
+//  } else {
+//    /* reset accumulator */
+//    INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
+//    INT_EULERS_ZERO( stabilization_att_sum_err );
+//  }
 
-  /* compute the feed forward command */
-  attitude_run_ff(stabilization_att_ff_cmd, &stabilization_gains, &stab_att_ref_accel);
+//  /* compute the feed forward command */
+//  attitude_run_ff(stabilization_att_ff_cmd, &stabilization_gains, &stab_att_ref_accel);
 
   /* compute the feed back command */
-  attitude_run_fb(stabilization_att_fb_cmd, &stabilization_gains, &att_err, &rate_err, &stabilization_att_sum_err_quat);
+  attitude_run_fb(stabilization_att_fb_cmd, &attitude_gains, &alpha, &beta, &psi, &rate_err);
 
   /* sum feedforward and feedback */
-  stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL] + stabilization_att_ff_cmd[COMMAND_ROLL];
-  stabilization_cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH] + stabilization_att_ff_cmd[COMMAND_PITCH];
-  stabilization_cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW] + stabilization_att_ff_cmd[COMMAND_YAW];
+  stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL];// + stabilization_att_ff_cmd[COMMAND_ROLL];
+  stabilization_cmd[COMMAND_PITCH] = stabilization_att_fb_cmd[COMMAND_PITCH];// + stabilization_att_ff_cmd[COMMAND_PITCH];
+  stabilization_cmd[COMMAND_YAW] = stabilization_att_fb_cmd[COMMAND_YAW];// + stabilization_att_ff_cmd[COMMAND_YAW];
 
   /* bound the result */
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
