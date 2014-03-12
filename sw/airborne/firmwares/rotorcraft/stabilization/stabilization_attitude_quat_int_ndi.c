@@ -23,7 +23,7 @@
  * Rotorcraft quaternion attitude stabilization with NDI control
  */
 
-/* Debug variables */
+/* Debug variables REMOVE*/
 float test;
 
 #include "firmwares/rotorcraft/stabilization.h"
@@ -39,13 +39,6 @@ float test;
 
 #include "std.h"
 #include <stdlib.h>
-
-//struct Int32AttitudeGains stabilization_gains = {
-//  {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
-//  {STABILIZATION_ATTITUDE_PHI_DGAIN, STABILIZATION_ATTITUDE_THETA_DGAIN, STABILIZATION_ATTITUDE_PSI_DGAIN },
-//  {STABILIZATION_ATTITUDE_PHI_DDGAIN, STABILIZATION_ATTITUDE_THETA_DDGAIN, STABILIZATION_ATTITUDE_PSI_DDGAIN },
-//  {STABILIZATION_ATTITUDE_PHI_IGAIN, STABILIZATION_ATTITUDE_THETA_IGAIN, STABILIZATION_ATTITUDE_PSI_IGAIN }
-//};
 
 struct Int32NDIAttitudeGains attitude_gains = {
 	{STABILIZATION_ATTITUDE_TILT_PGAIN, STABILIZATION_ATTITUDE_YAW_PGAIN},
@@ -207,26 +200,6 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
 //  ff_commands[COMMAND_YAW]   = GAIN_PRESCALER_FF * gains->dd.z * RATE_FLOAT_OF_BFP(ref_accel->r) / (1 << 7);
 //}
 //
-//static void attitude_run_fb(int32_t fb_commands[], struct Int32AttitudeGains *gains, struct Int32Quat *att_err,
-//    struct Int32Rates *rate_err, struct Int32Quat *sum_err)
-//{
-//  /*  PID feedback */
-//  fb_commands[COMMAND_ROLL] =
-//    GAIN_PRESCALER_P * gains->p.x  * QUAT1_FLOAT_OF_BFP(att_err->qx) / 4 +
-//    GAIN_PRESCALER_D * gains->d.x  * RATE_FLOAT_OF_BFP(rate_err->p) / 16 +
-//    GAIN_PRESCALER_I * gains->i.x  * QUAT1_FLOAT_OF_BFP(sum_err->qx) / 2;
-//
-//  fb_commands[COMMAND_PITCH] =
-//    GAIN_PRESCALER_P * gains->p.y  * QUAT1_FLOAT_OF_BFP(att_err->qy) / 4 +
-//    GAIN_PRESCALER_D * gains->d.y  * RATE_FLOAT_OF_BFP(rate_err->q)  / 16 +
-//    GAIN_PRESCALER_I * gains->i.y  * QUAT1_FLOAT_OF_BFP(sum_err->qy) / 2;
-//
-//  fb_commands[COMMAND_YAW] =
-//    GAIN_PRESCALER_P * gains->p.z  * QUAT1_FLOAT_OF_BFP(att_err->qz) / 4 +
-//    GAIN_PRESCALER_D * gains->d.z  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16 +
-//    GAIN_PRESCALER_I * gains->i.z  * QUAT1_FLOAT_OF_BFP(sum_err->qz) / 2;
-//
-//}
 
 static void attitude_run_fb(int32_t fb_commands[], struct Int32NDIAttitudeGains *gains, int32_t *alpha, int32_t *beta,
     int32_t *psi, struct Int32Rates *rate_err)
@@ -237,11 +210,11 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32NDIAttitudeGains 
 	PPRZ_ITRIG_COS(cbeta,*beta)
 	PPRZ_ITRIG_SIN(sbeta,*beta)
 
-    /*  Proportional tilt angle feedback */
+    /*  Proportional feedback tilt angle */
 	int32_t tilt_pcmd;
 	tilt_pcmd = GAIN_PRESCALER_P * gains->p.tilt  * ANGLE_FLOAT_OF_BFP(*alpha) / 4;
 
-	/*  Derivative p and q angular rates feedback */
+	/*  Derivative feedback angular rates p and q */
 	int32_t p_dcmd;
 	int32_t q_dcmd;
 	p_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->p) / 16;
@@ -251,6 +224,7 @@ static void attitude_run_fb(int32_t fb_commands[], struct Int32NDIAttitudeGains 
 	fb_commands[COMMAND_ROLL] = tilt_pcmd * TRIG_FLOAT_OF_BFP(cbeta) + p_dcmd;
 	fb_commands[COMMAND_PITCH] = tilt_pcmd * TRIG_FLOAT_OF_BFP(sbeta) + q_dcmd;
 
+	/* Yaw proportional and derivative feedback */
 	fb_commands[COMMAND_YAW] =
     GAIN_PRESCALER_P * gains->p.yaw  * ANGLE_FLOAT_OF_BFP(*psi) / 4 +
     GAIN_PRESCALER_D * gains->d.yaw  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16;
@@ -326,14 +300,24 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 	beta = ANGLE_BFP_OF_REAL(beta_f);
 	}
 
-  /*  rate error                */
+  /*  Desired rate in body frame (splitting yaw and tilt) */
   const struct Int32Rates rate_ref_scaled = {
     OFFSET_AND_ROUND(stab_att_ref_rate.p, (REF_RATE_FRAC - INT32_RATE_FRAC)),
     OFFSET_AND_ROUND(stab_att_ref_rate.q, (REF_RATE_FRAC - INT32_RATE_FRAC)),
     OFFSET_AND_ROUND(stab_att_ref_rate.r, (REF_RATE_FRAC - INT32_RATE_FRAC)) };
+
+  struct Int32Rates rate_ref_body;
+  int32_t cpsi, spsi;
+  cpsi = TRIG_BFP_OF_REAL(cosf(psi_f));
+  spsi = TRIG_BFP_OF_REAL(sinf(psi_f));
+  rate_ref_body.p = INT_MULT_RSHIFT(rate_ref_scaled.p,cpsi,INT32_TRIG_FRAC) + INT_MULT_RSHIFT(rate_ref_scaled.q,spsi,INT32_TRIG_FRAC);
+  rate_ref_body.q = INT_MULT_RSHIFT(rate_ref_scaled.q,cpsi,INT32_TRIG_FRAC) - INT_MULT_RSHIFT(rate_ref_scaled.p,spsi,INT32_TRIG_FRAC);
+  rate_ref_body.r = rate_ref_scaled.r;
+
+  /* rate error */
   struct Int32Rates rate_err;
   struct Int32Rates* body_rate = stateGetBodyRates_i();
-  RATES_DIFF(rate_err, rate_ref_scaled, (*body_rate));
+  RATES_DIFF(rate_err, rate_ref_body, (*body_rate));
 
 //  /* integrated error */
 //  if (enable_integrator) {
