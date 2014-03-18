@@ -204,30 +204,30 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
 static void attitude_run_fb(int32_t fb_commands[], struct Int32NDIAttitudeGains *gains, int32_t *alpha, int32_t *beta,
     int32_t *psi, struct Int32Rates *rate_err)
 {
-	/* Sin and cos of beta for proportional tilt command distribution */
-	int32_t cbeta;
-	int32_t sbeta;
-	PPRZ_ITRIG_COS(cbeta,*beta)
-	PPRZ_ITRIG_SIN(sbeta,*beta)
+  /* Sin and cos of beta for proportional tilt command distribution */
+  int32_t cbeta;
+  int32_t sbeta;
+  PPRZ_ITRIG_COS(cbeta,*beta)
+  PPRZ_ITRIG_SIN(sbeta,*beta)
 
-    /*  Proportional feedback tilt angle */
-	int32_t tilt_pcmd;
-	tilt_pcmd = GAIN_PRESCALER_P * gains->p.tilt  * ANGLE_FLOAT_OF_BFP(*alpha) / 4;
+  /*  Proportional feedback tilt angle */
+  int32_t tilt_pcmd;
+  tilt_pcmd = GAIN_PRESCALER_P * gains->p.tilt  * ANGLE_FLOAT_OF_BFP(*alpha) / 4;
 
-	/*  Derivative feedback angular rates p and q */
-	int32_t p_dcmd;
-	int32_t q_dcmd;
-	p_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->p) / 16;
-	q_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->q) / 16;
+  /*  Derivative feedback angular rates p and q */
+  int32_t p_dcmd;
+  int32_t q_dcmd;
+  p_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->p) / 16;
+  q_dcmd = GAIN_PRESCALER_D * gains->d.tilt  * RATE_FLOAT_OF_BFP(rate_err->q) / 16;
 
-	/* Distribution over roll and pitch command by using attitude error axis direction beta */
-	fb_commands[COMMAND_ROLL] = tilt_pcmd * TRIG_FLOAT_OF_BFP(cbeta) + p_dcmd;
-	fb_commands[COMMAND_PITCH] = tilt_pcmd * TRIG_FLOAT_OF_BFP(sbeta) + q_dcmd;
+  /* Distribution over roll and pitch command by using attitude error axis direction beta TODO: possible difference in pitch and roll response*/
+  fb_commands[COMMAND_ROLL] = tilt_pcmd * TRIG_FLOAT_OF_BFP(cbeta) + p_dcmd;
+  fb_commands[COMMAND_PITCH] = tilt_pcmd * TRIG_FLOAT_OF_BFP(sbeta) + q_dcmd;
 
-	/* Yaw proportional and derivative feedback */
-	fb_commands[COMMAND_YAW] =
-    GAIN_PRESCALER_P * gains->p.yaw  * ANGLE_FLOAT_OF_BFP(*psi) / 4 +
-    GAIN_PRESCALER_D * gains->d.yaw  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16;
+  /* Yaw proportional and derivative feedback */
+  fb_commands[COMMAND_YAW] =
+  GAIN_PRESCALER_P * gains->p.yaw  * ANGLE_FLOAT_OF_BFP(*psi) / 4 +
+  GAIN_PRESCALER_D * gains->d.yaw  * RATE_FLOAT_OF_BFP(rate_err->r)  / 16;
 
 }
 
@@ -252,53 +252,52 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
   /* Split error => roll and pitch separate from yaw */
 
-	/* Find tilt error angle alpha */
-	int32_t arg_acos;
-	arg_acos = (1<<2*INT32_QUAT_FRAC) - 2*(att_err.qx*att_err.qx + att_err.qy*att_err.qy);
+  /* Find tilt error angle alpha */
+  int32_t arg_acos;
+  arg_acos = (1<<2*INT32_QUAT_FRAC) - 2*(att_err.qx*att_err.qx + att_err.qy*att_err.qy);
 
-	/* TODO: acos in BFP, currently not precise enough */
-	int32_t alpha;
-	float alpha_f;
-	alpha_f = acosf(QUAT1_FLOAT_OF_BFP(QUAT1_FLOAT_OF_BFP(arg_acos)));
-	alpha = ANGLE_BFP_OF_REAL(alpha_f);
+  /* TODO: acos in BFP, currently not precise enough */
+  int32_t alpha;
+  float alpha_f;
+  alpha_f = acosf(QUAT1_FLOAT_OF_BFP(QUAT1_FLOAT_OF_BFP(arg_acos)));
+  alpha = ANGLE_BFP_OF_REAL(alpha_f);
 
-	/* Find tilt error angle axis direction beta and yaw error angle psi */
+  /* Find tilt error angle axis direction beta and yaw error angle psi */
 
-	/* TODO: atan2, sin and cos in BFP, current available functions are not precise enough */
-	int32_t beta, psi, cpsi_2, spsi_2, salpha_2;
-	float salpha_2_f, q3_f, q0_f, psi_f, rx, ry, psi_2_f, cpsi_2_f, spsi_2_f, beta_f;
+  /* TODO: atan2, sin and cos in BFP, current available functions are not precise enough */
+  int32_t beta, psi, cpsi_2, spsi_2, salpha_2;
+  float salpha_2_f, q3_f, q0_f, psi_f, rx, ry, psi_2_f, cpsi_2_f, spsi_2_f, beta_f;
 
-	salpha_2_f = sinf(alpha_f/2);
-	salpha_2 = TRIG_BFP_OF_REAL(salpha_2_f);
+  salpha_2_f = sinf(alpha_f/2);
+  salpha_2 = TRIG_BFP_OF_REAL(salpha_2_f);
 
-	if (alpha == 0 || salpha_2_f == 0) {
+  if (alpha == 0 || salpha_2_f == 0) {
 	  beta = 0;
 	  beta_f = 0;
-	}
-	else {
+  }
+  else {
+	  q3_f = QUAT1_FLOAT_OF_BFP(att_err.qz);
+	  q0_f = QUAT1_FLOAT_OF_BFP(att_err.qi);
 
-	q3_f = QUAT1_FLOAT_OF_BFP(att_err.qz);
-	q0_f = QUAT1_FLOAT_OF_BFP(att_err.qi);
+	  psi_f = atan2f(q3_f,q0_f);
+	  psi = ANGLE_BFP_OF_REAL(psi_f);
 
-	psi_f = atan2f(q3_f,q0_f);
-	psi = ANGLE_BFP_OF_REAL(psi_f);
+	  cpsi_2_f = cosf(psi_f/2);
+	  cpsi_2 = TRIG_BFP_OF_REAL(cpsi_2_f);
+	  spsi_2_f = sinf(psi_f/2);
+	  spsi_2 = TRIG_BFP_OF_REAL(spsi_2_f);
 
-	cpsi_2_f = cosf(psi_f/2);
-	cpsi_2 = TRIG_BFP_OF_REAL(cpsi_2_f);
-	spsi_2_f = sinf(psi_f/2);
-	spsi_2 = TRIG_BFP_OF_REAL(spsi_2_f);
+	  rx =
+			  TRIG_FLOAT_OF_BFP((INT_MULT_RSHIFT(cpsi_2,att_err.qx,INT32_QUAT_FRAC) -
+					  INT_MULT_RSHIFT(spsi_2,att_err.qy,INT32_QUAT_FRAC)))/TRIG_FLOAT_OF_BFP(salpha_2);
 
-	rx =
-		  TRIG_FLOAT_OF_BFP((INT_MULT_RSHIFT(cpsi_2,att_err.qx,INT32_QUAT_FRAC) -
-				  INT_MULT_RSHIFT(spsi_2,att_err.qy,INT32_QUAT_FRAC)))/TRIG_FLOAT_OF_BFP(salpha_2);
-
-	ry =
-		  TRIG_FLOAT_OF_BFP((INT_MULT_RSHIFT(spsi_2,att_err.qx,INT32_QUAT_FRAC) +
+	  ry =
+			  TRIG_FLOAT_OF_BFP((INT_MULT_RSHIFT(spsi_2,att_err.qx,INT32_QUAT_FRAC) +
 					  INT_MULT_RSHIFT(cpsi_2,att_err.qy,INT32_QUAT_FRAC)))/TRIG_FLOAT_OF_BFP(salpha_2);
 
-	beta_f = atan2f(ry,rx);
-	beta = ANGLE_BFP_OF_REAL(beta_f);
-	}
+	  beta_f = atan2f(ry,rx);
+	  beta = ANGLE_BFP_OF_REAL(beta_f);
+  }
 
   /*  Desired rate in body frame (splitting yaw and tilt) */
   const struct Int32Rates rate_ref_scaled = {
