@@ -1,6 +1,6 @@
 # Hey Emacs, this is a -*- makefile -*-
 #
-# Copyright (C) 2003-2006  Pascal Brisset, Antoine Drouin
+# Copyright (C) 2003-2014 The Paparazzi Team
 #
 # This file is part of paparazzi.
 #
@@ -22,20 +22,25 @@
 # Quiet compilation
 Q=@
 
-CC = gcc
-
-include ../Makefile.ocaml
+include ../../Makefile.ocaml
 
 INCLUDES =
 PKG = -package pprz
 LINKPKG = $(PKG) -linkpkg -dllpath-pkg pprz
 
-all: find_free_msg_id.out mergelogs
+all: gen_common.cmo gen_aircraft.out gen_airframe.out gen_messages2.out gen_messages.out gen_ubx.out gen_mtk.out gen_flight_plan.out gen_radio.out gen_periodic.out gen_settings.out gen_xsens.out gen_modules.out gen_autopilot.out gen_abi.out gen_srtm.out
 
+gen_flight_plan.out : gen_flight_plan.cmo $(LIBPPRZCMA)
+	@echo OL $@
+	$(Q)$(OCAMLC) $(INCLUDES) -o $@ $(LINKPKG) $^
 
-%.out : %.ml $(LIBPPRZCMA)
-	@echo OL $<
+gen_srtm.out : gen_srtm.ml $(LIBPPRZCMA)
+	@echo OL $@
 	$(Q)$(OCAMLC) $(INCLUDES) -o $@ $(LINKPKG) $<
+
+%.out : %.ml gen_common.cmo $(LIBPPRZCMA)
+	@echo OL $<
+	$(Q)$(OCAMLC) $(INCLUDES) -o $@ $(LINKPKG) gen_common.cmo $<
 
 %.cmo : %.ml
 	@echo OC $<
@@ -45,12 +50,8 @@ all: find_free_msg_id.out mergelogs
 	@echo OC $<
 	$(Q)$(OCAMLC) $(INCLUDES) $(PKG) -c $<
 
-mergelogs: mergelogs.c
-	@echo LD $@
-	$(Q)$(CC) mergelogs.c -o mergelogs
-
 clean:
-	$(Q)rm -f *.cm* *.out *~ .depend mergelogs
+	$(Q)rm -f *.cm* *.out *~ .depend
 
 .PHONY: all clean
 
