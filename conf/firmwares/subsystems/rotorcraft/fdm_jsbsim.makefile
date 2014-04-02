@@ -103,7 +103,6 @@ nps.srcs += $(SRC_FIRMWARE)/autopilot.c
 
 nps.srcs += state.c
 
-
 nps.srcs += $(SRC_FIRMWARE)/stabilization.c
 nps.srcs += $(SRC_FIRMWARE)/stabilization/stabilization_rate.c
 nps.srcs += $(SRC_FIRMWARE)/stabilization/stabilization_none.c
@@ -114,7 +113,6 @@ nps.srcs += $(SRC_FIRMWARE)/guidance/guidance_h_ref.c
 nps.srcs += $(SRC_FIRMWARE)/guidance/guidance_v.c
 nps.srcs += $(SRC_FIRMWARE)/guidance/guidance_v_ref.c
 nps.srcs += $(SRC_FIRMWARE)/guidance/guidance_v_adapt.c
-
 
 nps.srcs += $(SRC_FIRMWARE)/navigation.c
 nps.srcs += $(SRC_SUBSYSTEMS)/navigation/common_flight_plan.c

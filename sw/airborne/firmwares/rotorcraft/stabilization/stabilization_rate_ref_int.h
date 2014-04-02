@@ -31,10 +31,26 @@
 #define STABILIZATION_RATE_INT_REF_H
 
 #include "stabilization_rate_ref_int.h"
+#include "math/pprz_algebra_int.h"
 
-extern struct Int32Quat   stab_rate_sp_quat;  ///< with #INT32_QUAT_FRAC
-extern struct Int32Quat   stab_rate_ref_quat;  ///< with #INT32_QUAT_FRAC
+#define RATE_REF_JERK_FRAC 12
+#define RATE_REF_ACCEL_FRAC 16
+#define RATE_REF_RATE_FRAC  20
 
-void stabilization_rate_ref_enter(void);
+extern struct Int32Rates  stab_rate_ref_accel; ///< with #REF_ACCEL_FRAC
+extern struct Int32Rates  stab_rate_ref_jerk; ///< with #REF_JERK_FRAC
+extern struct Int32Rates  stab_rate_sp;  ///< with #INT32_RATE_FRAC
+extern struct Int32Rates  stab_rate_ref;  ///< with #INT32_RATE_FRAC
+
+struct Int32RateRefModel {
+  struct Int32Rates omega;
+  struct Int32Rates zeta;
+};
+
+extern struct Int32RateRefModel stab_rate_ref_model;
+
+//void stabilization_rate_ref_enter(void);
+extern void stabilization_rate_ref_init(void);
+extern void stabilization_rate_ref_update(void);
 
 #endif /* STABILIZATION_RATE_INT_REF_H */

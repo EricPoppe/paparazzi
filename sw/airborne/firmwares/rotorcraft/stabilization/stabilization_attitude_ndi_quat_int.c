@@ -19,17 +19,14 @@
  * Boston, MA 02111-1307, USA.
  */
 
-/** @file stabilization_attitude_quat_int_ndi.c
+/** @file stabilization_attitude_ndi_quat_int.c
  * Rotorcraft quaternion attitude stabilization with NDI control
  */
-
-/* Debug variables REMOVE*/
-float test;
 
 #include "firmwares/rotorcraft/stabilization.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
-#include "stabilization_attitude_quat_int_ndi.h"
+#include "stabilization_attitude_ndi_quat_int.h"
 
 #include <stdio.h>
 #include "math/pprz_algebra_float.h"
@@ -40,16 +37,16 @@ float test;
 #include "std.h"
 #include <stdlib.h>
 
-struct Int32NDIAttitudeGains attitude_gains = {
-	{STABILIZATION_ATTITUDE_TILT_PGAIN, STABILIZATION_ATTITUDE_YAW_PGAIN},
-	{STABILIZATION_ATTITUDE_TILT_DGAIN,STABILIZATION_ATTITUDE_YAW_DGAIN}
+struct Int32NDIAttitudeGains attitude_ndi_gains = {
+	{STABILIZATION_ATTITUDE_NDI_TILT_PGAIN, STABILIZATION_ATTITUDE_NDI_YAW_PGAIN},
+	{STABILIZATION_ATTITUDE_NDI_TILT_DGAIN,STABILIZATION_ATTITUDE_NDI_YAW_DGAIN}
 };
 
 /* warn if some gains are still negative */
-#if (STABILIZATION_ATTITUDE_TILT_PGAIN < 0) ||   \
-  (STABILIZATION_ATTITUDE_YAW_PGAIN < 0) ||   \
-  (STABILIZATION_ATTITUDE_TILT_DGAIN < 0)   ||   \
-  (STABILIZATION_ATTITUDE_YAW_DGAIN < 0)
+#if (STABILIZATION_ATTITUDE_NDI_TILT_PGAIN < 0) ||   \
+  (STABILIZATION_ATTITUDE_NDI_YAW_PGAIN < 0) ||   \
+  (STABILIZATION_ATTITUDE_NDI_TILT_DGAIN < 0)   ||   \
+  (STABILIZATION_ATTITUDE_NDI_YAW_DGAIN < 0)
 #warning "ALL control gains are now positive!!!"
 #endif
 
@@ -131,6 +128,7 @@ static void send_ahrs_ref_quat(void) {
 void stabilization_attitude_init(void) {
 
   stabilization_attitude_ref_init();
+  stabilization_rate_ndi_init();
 
   INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
   INT_EULERS_ZERO( stabilization_att_sum_err );
@@ -340,7 +338,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  attitude_run_ff(stabilization_att_ff_cmd, &stabilization_gains, &stab_att_ref_accel);
 
   /* compute the feed back command */
-  attitude_run_fb(stabilization_att_fb_cmd, &attitude_gains, &alpha, &beta, &psi, &rate_err);
+  attitude_run_fb(stabilization_att_fb_cmd, &attitude_ndi_gains, &alpha, &beta, &psi, &rate_err);
 
   /* sum feedforward and feedback */
   stabilization_cmd[COMMAND_ROLL] = stabilization_att_fb_cmd[COMMAND_ROLL];// + stabilization_att_ff_cmd[COMMAND_ROLL];
@@ -351,6 +349,14 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
   BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
   BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+
+  // TEST REMOVE
+  stab_rate_sp.p = stabilization_cmd[COMMAND_ROLL] << 10;
+  stab_rate_sp.q = stabilization_cmd[COMMAND_PITCH] << 10;
+  stab_rate_sp.r = stabilization_cmd[COMMAND_YAW] << 10;
+
+  stabilization_rate_ndi_run(enable_integrator);
+
 }
 
 void stabilization_attitude_read_rc(bool_t in_flight) {

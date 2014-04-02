@@ -27,10 +27,10 @@
 #define STABILIZATION_RATE_REF_SATURATE_H
 
 #define SATURATE_SPEED_TRIM_ACCEL() {                   \
-    if (stab_att_ref_rate.p >= REF_RATE_MAX_P) {		\
-      stab_att_ref_rate.p = REF_RATE_MAX_P;             \
-      if (stab_att_ref_accel.p > 0)                     \
-        stab_att_ref_accel.p = 0;                       \
+    if (stab_rate_ref.p >= REF_RATE_MAX_P) {		\
+      stab_rate_ref.p = REF_RATE_MAX_P;             \
+      if (stab_rate_ref_accel.p > 0)                     \
+        stab_rate_ref_accel.p = 0;                       \
     }                                                   \
     else if (stab_att_ref_rate.p <= -REF_RATE_MAX_P) {	\
       stab_att_ref_rate.p = -REF_RATE_MAX_P;            \

@@ -171,7 +171,6 @@ void stabilization_attitude_ref_update(void) {
 
   RATES_SUM(stab_att_ref_accel, accel_rate, accel_angle);
 
-
   /* saturate acceleration */
   const struct Int32Rates MIN_ACCEL = { -REF_ACCEL_MAX_P, -REF_ACCEL_MAX_Q, -REF_ACCEL_MAX_R };
   const struct Int32Rates MAX_ACCEL = {  REF_ACCEL_MAX_P,  REF_ACCEL_MAX_Q,  REF_ACCEL_MAX_R };
