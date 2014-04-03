@@ -255,7 +255,7 @@ STATIC_INLINE void failsafe_check( void ) {
 
 #if USE_GPS
   gps_periodic_check();
-  if (autopilot_mode == AP_MODE_NAV &&
+  if ((autopilot_mode == AP_MODE_NAV) &&
       autopilot_motors_on &&
 #if NO_GPS_LOST_WITH_RC_VALID
       radio_control.status != RC_OK &&

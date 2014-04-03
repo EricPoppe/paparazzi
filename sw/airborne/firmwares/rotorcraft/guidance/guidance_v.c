@@ -198,6 +198,7 @@ void guidance_v_mode_changed(uint8_t new_mode) {
 
   switch (new_mode) {
   case GUIDANCE_V_MODE_HOVER:
+  case GUIDANCE_V_MODE_HOVER_NDI:
     guidance_v_z_sp = stateGetPositionNed_i()->z; // set current altitude as setpoint
     guidance_v_z_sum_err = 0;
     GuidanceVSetRef(stateGetPositionNed_i()->z, 0, 0);
@@ -207,6 +208,7 @@ void guidance_v_mode_changed(uint8_t new_mode) {
   case GUIDANCE_V_MODE_CLIMB:
     guidance_v_zd_sp = 0;
   case GUIDANCE_V_MODE_NAV:
+  case GUIDANCE_V_MODE_NAV_NDI:
     guidance_v_z_sum_err = 0;
     GuidanceVSetRef(stateGetPositionNed_i()->z, stateGetSpeedNed_i()->z, 0);
     break;
@@ -278,7 +280,52 @@ void guidance_v_run(bool_t in_flight) {
 #endif
     break;
 
+  case GUIDANCE_V_MODE_HOVER_NDI:
+    guidance_v_zd_sp = 0;
+    gv_update_ref_from_z_sp(guidance_v_z_sp);
+    run_hover_loop(in_flight);
+#if NO_RC_THRUST_LIMIT
+    stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
+#else
+    // saturate max authority with RC stick
+    stabilization_cmd[COMMAND_THRUST] = Min(guidance_v_rc_delta_t, guidance_v_delta_t);
+#endif
+    break;
+
   case GUIDANCE_V_MODE_NAV:
+    {
+      if (vertical_mode == VERTICAL_MODE_ALT) {
+        guidance_v_z_sp = -nav_flight_altitude;
+        guidance_v_zd_sp = 0;
+        gv_update_ref_from_z_sp(guidance_v_z_sp);
+        run_hover_loop(in_flight);
+      }
+      else if (vertical_mode == VERTICAL_MODE_CLIMB) {
+        guidance_v_z_sp = stateGetPositionNed_i()->z;
+        guidance_v_zd_sp = -nav_climb;
+        gv_update_ref_from_zd_sp(guidance_v_zd_sp);
+        run_hover_loop(in_flight);
+      }
+      else if (vertical_mode == VERTICAL_MODE_MANUAL) {
+        guidance_v_z_sp = stateGetPositionNed_i()->z;
+        guidance_v_zd_sp = stateGetSpeedNed_i()->z;
+        GuidanceVSetRef(guidance_v_z_sp, guidance_v_zd_sp, 0);
+        guidance_v_z_sum_err = 0;
+        guidance_v_delta_t = nav_throttle;
+      }
+#if NO_RC_THRUST_LIMIT
+      stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
+#else
+      /* use rc limitation if available */
+      if (radio_control.status == RC_OK)
+        stabilization_cmd[COMMAND_THRUST] = Min(guidance_v_rc_delta_t, guidance_v_delta_t);
+      else
+        stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
+#endif
+      break;
+    }
+
+  case GUIDANCE_V_MODE_NAV_NDI:
     {
       if (vertical_mode == VERTICAL_MODE_ALT) {
         guidance_v_z_sp = -nav_flight_altitude;

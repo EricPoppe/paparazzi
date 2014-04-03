@@ -38,6 +38,8 @@
 #define GUIDANCE_V_MODE_CLIMB     3
 #define GUIDANCE_V_MODE_HOVER     4
 #define GUIDANCE_V_MODE_NAV       5
+#define GUIDANCE_V_MODE_NAV_NDI   6
+#define GUIDANCE_V_MODE_HOVER_NDI 7
 
 extern uint8_t guidance_v_mode;
 

@@ -12,4 +12,3 @@ ap.srcs += $(STAB_ATT_SRCS)
 
 nps.CFLAGS += $(STAB_ATT_CFLAGS)
 nps.srcs += $(STAB_ATT_SRCS)
-nps.CONTROL = NDI
