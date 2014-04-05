@@ -86,8 +86,8 @@ bool_t nav_is_in_flight(void);
 
 void nav_home(void);
 
-#define NavKillThrottle() ({ if (autopilot_mode == AP_MODE_NAV) { autopilot_set_motors_on(FALSE); } FALSE; })
-#define NavResurrect() ({ if (autopilot_mode == AP_MODE_NAV) { autopilot_set_motors_on(TRUE); } FALSE; })
+#define NavKillThrottle() ({ if (autopilot_mode == AP_MODE_NAV || autopilot_mode == AP_MODE_NAV_NDI) { autopilot_set_motors_on(FALSE); } FALSE; })
+#define NavResurrect() ({ if (autopilot_mode == AP_MODE_NAV || autopilot_mode == AP_MODE_NAV_NDI) { autopilot_set_motors_on(TRUE); } FALSE; })
 
 
 #define NavSetGroundReferenceHere() ({ nav_reset_reference(); FALSE; })

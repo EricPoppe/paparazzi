@@ -379,14 +379,14 @@ void autopilot_set_mode(uint8_t new_autopilot_mode) {
       case AP_MODE_HOVER_Z_HOLD:
         guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER);
         break;
+      case AP_MODE_ATTITUDE_Z_HOLD_NDI:
+    	guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER_NDI);
+    	break;
       case AP_MODE_NAV:
         guidance_v_mode_changed(GUIDANCE_V_MODE_NAV);
         break;
       case AP_MODE_NAV_NDI:
         guidance_v_mode_changed(GUIDANCE_V_MODE_NAV_NDI);
-        break;
-      case AP_MODE_ATTITUDE_Z_HOLD_NDI:
-        guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER_NDI);
         break;
       default:
         break;
@@ -453,7 +453,7 @@ void autopilot_on_rc_frame(void) {
     uint8_t new_autopilot_mode = 0;
     AP_MODE_OF_PPRZ(radio_control.values[RADIO_MODE], new_autopilot_mode);
     /* don't enter NAV mode if GPS is lost (this also prevents mode oscillations) */
-    if (!(new_autopilot_mode == AP_MODE_NAV
+    if (!((new_autopilot_mode == AP_MODE_NAV || new_autopilot_mode == AP_MODE_NAV_NDI)
 #if USE_GPS
           && GpsIsLost()
 #endif
@@ -471,7 +471,7 @@ void autopilot_on_rc_frame(void) {
 
     /* if not in NAV_MODE set commands from the rc */
 #ifdef SetCommandsFromRC
-    if (autopilot_mode != AP_MODE_NAV) {
+    if (autopilot_mode != AP_MODE_NAV && autopilot_mode != AP_MODE_NAV_NDI) {
       SetCommandsFromRC(commands, radio_control.values);
     }
 #endif
