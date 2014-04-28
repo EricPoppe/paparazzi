@@ -327,6 +327,9 @@ void guidance_h_run(bool_t  in_flight) {
       /* compute x,y earth commands */
       guidance_h_traj_run(in_flight);
       /* set final attitude setpoint */
+      guidance_h_cmd_earth.x = (int32_t)(25/180*3.14) << INT32_ANGLE_FRAC;
+      guidance_h_cmd_earth.y = (int32_t)(0/180*3.14) << INT32_ANGLE_FRAC;
+      guidance_h_heading_sp = 0;
       stabilization_attitude_set_earth_cmd_i(&guidance_h_cmd_earth,
                                              guidance_h_heading_sp);
       stabilization_attitude_run(in_flight);

@@ -26,13 +26,18 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_ref_quat_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_rate_ref_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_rate_ndi_int.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_altitude_ndi_quat_int.h"
+
+#include "firmwares/rotorcraft/autopilot.h"
 
 #include "math/pprz_algebra_int.h"
+#include "paparazzi.h"
 
 #include "generated/airframe.h"
 
-extern int32_t stabilization_att_fb_cmd[COMMANDS_NB];
-extern int32_t stabilization_att_ff_cmd[COMMANDS_NB];
+/*REMOVE DEBUG*/
+extern float rate_test;
+extern float alt_test;
 
 /* Definition of gain structs */
 
@@ -46,6 +51,19 @@ struct Int32NDIAttitudeGains {
 	struct att_directions d;
 };
 
+struct Int32Thrust {
+	int32_t T1;
+	int32_t T2;
+	int32_t T3;
+	int32_t T4;
+};
+
 extern struct Int32NDIAttitudeGains  attitude_ndi_gains;
+extern void stabilization_attitude_thrust_run(bool_t motors_on);
+extern struct Int32Thrust thrust_command;
+extern void attitude_tcommand_from_t(int32_t *tcom, int32_t *t);
+extern void attitude_t_from_tcommand(int32_t *t, int32_t *tcom);
+extern int32_t getMaxT();
+extern void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des);
 
 #endif /* STABILIZATION_ATTITUDE_NDI_QUAT_INT_H */

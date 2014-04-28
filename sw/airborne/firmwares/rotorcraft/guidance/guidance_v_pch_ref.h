@@ -21,7 +21,7 @@
  */
 
 /** @file firmwares/rotorcraft/guidance/guidance_v_pch_ref.h
- *  Reference generation for vertical guidance with PCH.
+ *  Reference generation for vertical guidance using PCH.
  *
  */
 
@@ -33,49 +33,41 @@
 #include "math/pprz_algebra_int.h"
 #include "generated/airframe.h"
 
-#ifndef GUIDANCE_V_REF_MIN_ZD
-#define GUIDANCE_V_REF_MIN_ZD (-3.)
-#endif
-
-#ifndef GUIDANCE_V_REF_MAX_ZD
-#define GUIDANCE_V_REF_MAX_ZD ( 3.)
-#endif
-
-
 /** Update frequency
  */
-#define GV_FREQ_FRAC 9
-#define GV_FREQ (1<<GV_FREQ_FRAC)
+#define GV_PCH_FREQ_FRAC 9
+#define GV_PCH_FREQ (1<<GV_FREQ_FRAC)
 
 /** reference model vertical accel in meters/s^2 (output)
  *  fixed point representation with #GV_ZDD_REF_FRAC
  *  Q23.8 : accuracy 0.0039 , range 8388km/s^2
  */
-extern int32_t gv_zdd_ref;
+extern int32_t gv_pch_zdd_ref;
 
 /** number of bits for the fractional part of #gv_zdd_ref */
-#define GV_ZDD_REF_FRAC 8
+#define GV_PCH_ZDD_REF_FRAC 8
 
 /** reference model vertical speed in meters/sec (output)
  *  fixed point representation with #GV_ZD_REF_FRAC
  *  Q14.17 : accuracy 0.0000076 , range 16384m/s2
  */
-extern int32_t gv_zd_ref;
+extern int32_t gv_pch_zd_ref;
 
 /** number of bits for the fractional part of #gv_zd_ref */
-#define GV_ZD_REF_FRAC (GV_ZDD_REF_FRAC + GV_FREQ_FRAC)
+#define GV_PCH_ZD_REF_FRAC (GV_PCH_ZDD_REF_FRAC + GV_PCH_FREQ_FRAC)
 
 /** reference model altitude in meters (output)
  *  fixed point representation with #GV_Z_REF_FRAC
  *  Q37.26 :
  */
-extern int64_t gv_z_ref;
+extern int64_t gv_pch_z_ref;
 
 /** number of bits for the fractional part of #gv_z_ref */
-#define GV_Z_REF_FRAC (GV_ZD_REF_FRAC + GV_FREQ_FRAC)
+#define GV_PCH_Z_REF_FRAC (GV_PCH_ZD_REF_FRAC + GV_PCH_FREQ_FRAC)
 
-extern void gv_set_ref(int32_t alt, int32_t speed, int32_t accel);
-extern void gv_update_ref_from_z_sp(int32_t z_sp);
-extern void gv_update_ref_from_zd_sp(int32_t zd_sp);
+extern void gv_pch_init();
+extern void gv_pch_set_ref(int32_t alt, int32_t speed, int32_t accel);
+extern void gv_pch_update_ref_from_z_sp(int32_t z_sp);
+extern void gv_pch_update_ref_from_zd_sp(int32_t zd_sp);
 
 #endif /* GUIDANCE_V_PCH_REF_H */

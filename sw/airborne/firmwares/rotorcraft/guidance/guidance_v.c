@@ -101,6 +101,11 @@ int32_t guidance_v_z_ref;
 int32_t guidance_v_zd_ref;
 int32_t guidance_v_zdd_ref;
 
+/* ndi control setpoints */
+int64_t altitude_z_sp; //with INT64_STAB_ALT_X_REF_FRAC
+int64_t altitude_zd_sp; //with INT64_STAB_ALT_X_REF_FRAC
+int8_t altitude_vert_mode; // 0 manual, 1 climb, 2 alt
+
 int32_t guidance_v_kp;
 int32_t guidance_v_kd;
 int32_t guidance_v_ki;
@@ -198,6 +203,7 @@ void guidance_v_mode_changed(uint8_t new_mode) {
 
   switch (new_mode) {
   case GUIDANCE_V_MODE_HOVER:
+  case GUIDANCE_V_MODE_HOVER_NDI:
     guidance_v_z_sp = stateGetPositionNed_i()->z; // set current altitude as setpoint
     guidance_v_z_sum_err = 0;
     GuidanceVSetRef(stateGetPositionNed_i()->z, 0, 0);
@@ -208,9 +214,6 @@ void guidance_v_mode_changed(uint8_t new_mode) {
     guidance_v_zd_sp = 0;
   break;
   case GUIDANCE_V_MODE_NAV:
-    guidance_v_z_sum_err = 0;
-    GuidanceVSetRef(stateGetPositionNed_i()->z, stateGetSpeedNed_i()->z, 0);
-    break;
   case GUIDANCE_V_MODE_NAV_NDI:
     guidance_v_z_sum_err = 0;
     GuidanceVSetRef(stateGetPositionNed_i()->z, stateGetSpeedNed_i()->z, 0);
@@ -283,6 +286,13 @@ void guidance_v_run(bool_t in_flight) {
 #endif
     break;
 
+  case GUIDANCE_V_MODE_HOVER_NDI:
+    guidance_v_zd_sp = 0;
+    altitude_z_sp = ((int64_t)guidance_v_z_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_POS_FRAC);
+    altitude_zd_sp = ((int64_t)guidance_v_zd_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_SPEED_FRAC);
+    altitude_vert_mode = vertical_mode;
+    break;
+
   case GUIDANCE_V_MODE_NAV:
     {
       if (vertical_mode == VERTICAL_MODE_ALT) {
@@ -321,31 +331,25 @@ void guidance_v_run(bool_t in_flight) {
       if (vertical_mode == VERTICAL_MODE_ALT) {
         guidance_v_z_sp = -nav_flight_altitude;
         guidance_v_zd_sp = 0;
-        gv_update_ref_from_z_sp(guidance_v_z_sp);
-        run_hover_loop(in_flight);
+        altitude_z_sp = ((int64_t)guidance_v_z_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_POS_FRAC);
+        altitude_zd_sp = ((int64_t)guidance_v_zd_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_SPEED_FRAC);
+        altitude_vert_mode = vertical_mode;
       }
       else if (vertical_mode == VERTICAL_MODE_CLIMB) {
         guidance_v_z_sp = stateGetPositionNed_i()->z;
         guidance_v_zd_sp = -nav_climb;
-        gv_update_ref_from_zd_sp(guidance_v_zd_sp);
-        run_hover_loop(in_flight);
+        altitude_z_sp = ((int64_t)guidance_v_z_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_POS_FRAC);
+        altitude_zd_sp = ((int64_t)guidance_v_zd_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_SPEED_FRAC);
+        altitude_vert_mode = vertical_mode;
       }
       else if (vertical_mode == VERTICAL_MODE_MANUAL) {
         guidance_v_z_sp = stateGetPositionNed_i()->z;
         guidance_v_zd_sp = stateGetSpeedNed_i()->z;
-        GuidanceVSetRef(guidance_v_z_sp, guidance_v_zd_sp, 0);
-        guidance_v_z_sum_err = 0;
+        altitude_z_sp = ((int64_t)guidance_v_z_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_POS_FRAC);
+        altitude_zd_sp = ((int64_t)guidance_v_zd_sp) << (INT64_STAB_ALT_X_REF_FRAC - INT32_SPEED_FRAC);
         guidance_v_delta_t = nav_throttle;
+        altitude_vert_mode = vertical_mode;
       }
-#if NO_RC_THRUST_LIMIT
-      stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
-#else
-      /* use rc limitation if available */
-      if (radio_control.status == RC_OK)
-        stabilization_cmd[COMMAND_THRUST] = Min(guidance_v_rc_delta_t, guidance_v_delta_t);
-      else
-        stabilization_cmd[COMMAND_THRUST] = guidance_v_delta_t;
-#endif
       break;
     }
 

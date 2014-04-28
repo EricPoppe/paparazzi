@@ -33,14 +33,14 @@
 #include "stabilization_rate_ref_int.h"
 #include "math/pprz_algebra_int.h"
 
-#define RATE_REF_JERK_FRAC 12
-#define RATE_REF_ACCEL_FRAC 16
-#define RATE_REF_RATE_FRAC  20
+#define RATE_REF_JERK_FRAC 18
+#define RATE_REF_ACCEL_FRAC 27
+#define RATE_REF_RATE_FRAC 36
 
-extern struct Int32Rates  stab_rate_ref_accel; ///< with #REF_ACCEL_FRAC
-extern struct Int32Rates  stab_rate_ref_jerk; ///< with #REF_JERK_FRAC
-extern struct Int32Rates  stab_rate_sp;  ///< with #INT32_RATE_FRAC
-extern struct Int32Rates  stab_rate_ref;  ///< with #INT32_RATE_FRAC
+extern struct Int64Rates  stab_rate_ref_accel; ///< with RATE_REF_ACCEL_FRAC
+extern struct Int64Rates  stab_rate_ref_jerk; ///< with RATE_REF_JERK_FRAC
+extern struct Int32Rates  stab_rate_sp;  ///< with INT32_RATE_FRAC
+extern struct Int64Rates  stab_rate_ref;  ///< with RATE_REF_RATE_FRAC
 
 struct Int32RateRefModel {
   struct Int32Rates omega;

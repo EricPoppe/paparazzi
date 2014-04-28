@@ -7,6 +7,8 @@ STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_attitude_ndi_quat_i
 STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_attitude_quat_transformations.c
 STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_attitude_rc_setpoint.c
 
+STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_altitude_ndi_quat_int.c
+
 ap.CFLAGS += $(STAB_ATT_CFLAGS)
 ap.srcs += $(STAB_ATT_SRCS)
 

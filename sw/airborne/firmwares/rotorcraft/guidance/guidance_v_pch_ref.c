@@ -21,7 +21,7 @@
  */
 
 /** @file firmwares/rotorcraft/guidance/guidance_v_pch_ref.c
- *  Reference generation for vertical guidance.
+ *  Reference generation for vertical guidance using PCH.
  *
  */
 
@@ -32,113 +32,69 @@
  *  fixed point representation with #GV_ZDD_REF_FRAC
  *  Q23.8 : accuracy 0.0039 , range 8388km/s^2
  */
-int32_t gv_zdd_ref;
+int32_t gv_pch_zdd_ref;
 
 /** reference model vertical speed in meters/sec (output)
  *  fixed point representation with #GV_ZD_REF_FRAC
  *  Q14.17 : accuracy 0.0000076 , range 16384m/s2
  */
-int32_t gv_zd_ref;
+int32_t gv_pch_zd_ref;
 
 /** reference model altitude in meters (output)
  *  fixed point representation with #GV_Z_REF_FRAC
  *  Q37.26 :
  */
-int64_t gv_z_ref;
-
-
-/* Saturations definition */
-#ifndef GUIDANCE_V_REF_MIN_ZDD
-#define GUIDANCE_V_REF_MIN_ZDD (-2.0*9.81)
-#endif
-#define GV_MIN_ZDD BFP_OF_REAL(GUIDANCE_V_REF_MIN_ZDD, GV_ZDD_REF_FRAC)
-
-#ifndef GUIDANCE_V_REF_MAX_ZDD
-#define GUIDANCE_V_REF_MAX_ZDD ( 0.8*9.81)
-#endif
-#define GV_MAX_ZDD BFP_OF_REAL(GUIDANCE_V_REF_MAX_ZDD, GV_ZDD_REF_FRAC)
-
-#define GV_MIN_ZD  BFP_OF_REAL(GUIDANCE_V_REF_MIN_ZD , GV_ZD_REF_FRAC)
-#define GV_MAX_ZD  BFP_OF_REAL(GUIDANCE_V_REF_MAX_ZD , GV_ZD_REF_FRAC)
+int64_t gv_pch_z_ref;
 
 /* second order model natural frequency and damping */
-#ifndef GUIDANCE_V_REF_OMEGA
-#define GUIDANCE_V_REF_OMEGA RadOfDeg(100.)
+#ifndef GUIDANCE_V_PCH_REF_OMEGA
+#define GUIDANCE_V_PCH_REF_OMEGA RadOfDeg(100.)
 #endif
-#ifndef GUIDANCE_V_REF_ZETA
-#define GUIDANCE_V_REF_ZETA  0.85
+#ifndef GUIDANCE_V_PCH_REF_ZETA
+#define GUIDANCE_V_PCH_REF_ZETA  0.85
 #endif
-#define GV_ZETA_OMEGA_FRAC 10
-#define GV_ZETA_OMEGA BFP_OF_REAL((GUIDANCE_V_REF_ZETA*GUIDANCE_V_REF_OMEGA), GV_ZETA_OMEGA_FRAC)
-#define GV_OMEGA_2_FRAC 7
-#define GV_OMEGA_2    BFP_OF_REAL((GUIDANCE_V_REF_OMEGA*GUIDANCE_V_REF_OMEGA), GV_OMEGA_2_FRAC)
+#define GV_PCH_ZETA_OMEGA_FRAC 10
+#define GV_PCH_ZETA_OMEGA BFP_OF_REAL((GUIDANCE_V_PCH_REF_ZETA*GUIDANCE_V_PCH_REF_OMEGA), GV_PCH_ZETA_OMEGA_FRAC)
+#define GV_PCH_OMEGA_2_FRAC 7
+#define GV_PCH_OMEGA_2    BFP_OF_REAL((GUIDANCE_V_PCH_REF_OMEGA*GUIDANCE_V_PCH_REF_OMEGA), GV_PCH_OMEGA_2_FRAC)
 
 /* first order time constant */
-#define GV_REF_THAU_F  0.25
-#define GV_REF_INV_THAU_FRAC 16
-#define GV_REF_INV_THAU  BFP_OF_REAL((1./0.25), GV_REF_INV_THAU_FRAC)
+#define GV_PCH_REF_THAU_F  0.25
+#define GV_PCH_REF_INV_THAU_FRAC 16
+#define GV_PCH_REF_INV_THAU  BFP_OF_REAL((1./0.25), GV_PCH_REF_INV_THAU_FRAC)
 
-void gv_set_ref(int32_t alt, int32_t speed, int32_t accel) {
-  int64_t new_z = ((int64_t)alt)<<(GV_Z_REF_FRAC - INT32_POS_FRAC);
-  gv_z_ref   = new_z;
-  gv_zd_ref  = speed>>(INT32_SPEED_FRAC - GV_ZD_REF_FRAC);
-  gv_zdd_ref = accel>>(INT32_ACCEL_FRAC - GV_ZDD_REF_FRAC);
+void gv_pch_set_ref(int32_t alt, int32_t speed, int32_t accel) {
+  int64_t new_z = ((int64_t)alt)<<(GV_PCH_Z_REF_FRAC - INT32_POS_FRAC);
+  gv_pch_z_ref   = new_z;
+  gv_pch_zd_ref  = speed>>(INT32_SPEED_FRAC - GV_PCH_ZD_REF_FRAC);
+  gv_pch_zdd_ref = accel>>(INT32_ACCEL_FRAC - GV_PCH_ZDD_REF_FRAC);
 }
 
-void gv_update_ref_from_z_sp(int32_t z_sp) {
+void gv_pch_update_ref_from_z_sp(int32_t z_sp) {
 
-  gv_z_ref  += gv_zd_ref;
-  gv_zd_ref += gv_zdd_ref;
+  gv_pch_z_ref  += gv_pch_zd_ref;
+  gv_pch_zd_ref += gv_pch_zdd_ref;
 
   // compute the "speed part" of zdd = -2*zeta*omega*zd -omega^2(z_sp - z)
-  int32_t zd_zdd_res = gv_zd_ref>>(GV_ZD_REF_FRAC - GV_ZDD_REF_FRAC);
-  int32_t zdd_speed = ((int32_t)(-2*GV_ZETA_OMEGA)*zd_zdd_res)>>(GV_ZETA_OMEGA_FRAC);
+  int32_t zd_zdd_res = gv_pch_zd_ref>>(GV_PCH_ZD_REF_FRAC - GV_PCH_ZDD_REF_FRAC);
+  int32_t zdd_speed = ((int32_t)(-2*GV_PCH_ZETA_OMEGA)*zd_zdd_res)>>(GV_PCH_ZETA_OMEGA_FRAC);
   // compute z error in z_sp resolution
-  int32_t z_err_sp = z_sp - (int32_t)(gv_z_ref>>(GV_Z_REF_FRAC-INT32_POS_FRAC));
+  int32_t z_err_sp = z_sp - (int32_t)(gv_pch_z_ref>>(GV_PCH_Z_REF_FRAC-INT32_POS_FRAC));
   // convert to accel resolution
-  int32_t z_err_accel = z_err_sp>>(INT32_POS_FRAC-GV_ZDD_REF_FRAC);
-  int32_t zdd_pos = ((int32_t)(GV_OMEGA_2)*z_err_accel)>>GV_OMEGA_2_FRAC;
-  gv_zdd_ref = zdd_speed + zdd_pos;
+  int32_t z_err_accel = z_err_sp>>(INT32_POS_FRAC-GV_PCH_ZDD_REF_FRAC);
+  int32_t zdd_pos = ((int32_t)(GV_PCH_OMEGA_2)*z_err_accel)>>GV_PCH_OMEGA_2_FRAC;
+  gv_pch_zdd_ref = zdd_speed + zdd_pos;
 
-  /* Saturate accelerations */
-  Bound(gv_zdd_ref, GV_MIN_ZDD, GV_MAX_ZDD);
-
-  /* Saturate speed and adjust acceleration accordingly */
-  if (gv_zd_ref <= GV_MIN_ZD) {
-    gv_zd_ref = GV_MIN_ZD;
-    if (gv_zdd_ref < 0)
-      gv_zdd_ref = 0;
-  }
-  else if (gv_zd_ref >= GV_MAX_ZD) {
-    gv_zd_ref = GV_MAX_ZD;
-    if (gv_zdd_ref > 0)
-      gv_zdd_ref = 0;
-  }
 }
 
+void gv_pch_update_ref_from_zd_sp(int32_t zd_sp) {
 
-void gv_update_ref_from_zd_sp(int32_t zd_sp) {
+  gv_pch_z_ref  += gv_pch_zd_ref;
+  gv_pch_zd_ref += gv_pch_zdd_ref;
 
-  gv_z_ref  += gv_zd_ref;
-  gv_zd_ref += gv_zdd_ref;
+  int32_t zd_err = gv_pch_zd_ref - (zd_sp>>(INT32_SPEED_FRAC - GV_PCH_ZD_REF_FRAC));
+  int32_t zd_err_zdd_res = zd_err>>(GV_PCH_ZD_REF_FRAC-GV_PCH_ZDD_REF_FRAC);
+  gv_pch_zdd_ref = (-(int32_t)GV_PCH_REF_INV_THAU * zd_err_zdd_res)>>GV_PCH_REF_INV_THAU_FRAC;
 
-  int32_t zd_err = gv_zd_ref - (zd_sp>>(INT32_SPEED_FRAC - GV_ZD_REF_FRAC));
-  int32_t zd_err_zdd_res = zd_err>>(GV_ZD_REF_FRAC-GV_ZDD_REF_FRAC);
-  gv_zdd_ref = (-(int32_t)GV_REF_INV_THAU * zd_err_zdd_res)>>GV_REF_INV_THAU_FRAC;
-
-  /* Saturate accelerations */
-  Bound(gv_zdd_ref, GV_MIN_ZDD, GV_MAX_ZDD);
-
-  /* Saturate speed and adjust acceleration accordingly */
-  if (gv_zd_ref <= GV_MIN_ZD) {
-    gv_zd_ref = GV_MIN_ZD;
-    if (gv_zdd_ref < 0)
-      gv_zdd_ref = 0;
-  }
-  else if (gv_zd_ref >= GV_MAX_ZD) {
-    gv_zd_ref = GV_MAX_ZD;
-    if (gv_zdd_ref > 0)
-      gv_zdd_ref = 0;
-  }
 }
 

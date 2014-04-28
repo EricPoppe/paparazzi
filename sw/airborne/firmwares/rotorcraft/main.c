@@ -26,6 +26,9 @@
  * Rotorcraft main loop.
  */
 
+/* for the NDI quatrotor controller */
+#include "firmwares/rotorcraft/stabilization/stabilization_attitude_ndi_quat_int.h"
+
 #define MODULES_C
 
 #define ABI_C

@@ -24,14 +24,11 @@
 
 //#include "firmwares/rotorcraft/stabilization/stabilization_attitude_common_int.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_rate_ref_int.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_altitude_ndi_quat_int.h"
 
 #include "math/pprz_algebra_int.h"
 
 #include "generated/airframe.h"
-
-extern int32_t stabilization_att_fb_cmd[COMMANDS_NB];
-extern int32_t stabilization_att_ff_cmd[COMMANDS_NB];
-extern float test;
 
 extern void stabilization_rate_ndi_run(bool_t in_flight);
 extern void stabilization_rate_ndi_init();
@@ -48,7 +45,7 @@ struct Int32NDIRateGains {
 	struct rate_directions p;
 	struct rate_directions i;
 	struct rate_directions d;
-	struct rate_directions dd;
+	struct rate_directions ff;
 };
 
 extern struct Int32NDIRateGains rate_ndi_gains;
@@ -59,11 +56,12 @@ struct Int32VirtualInput {
 	int32_t r;
 };
 
-struct Int32Thrust {
-	int32_t T1;
-	int32_t T2;
-	int32_t T3;
-	int32_t T4;
+struct Int32ThrustDiff {
+	int32_t roll;
+	int32_t pitch;
+	int32_t yaw;
 };
+
+extern struct Int32ThrustDiff rate_thrust_diff;
 
 #endif /* STABILIZATION_RATE_NDI_QUAT_INT_H */

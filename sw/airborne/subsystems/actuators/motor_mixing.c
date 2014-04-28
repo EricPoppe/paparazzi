@@ -136,6 +136,7 @@ __attribute__ ((always_inline)) static inline void bound_commands_step(void) {
 
 void motor_mixing_run_spinup(uint32_t counter, uint32_t max_counter)
 {
+
   int i;
   for (i = 0; i < MOTOR_MIXING_NB_MOTOR; i++) {
 #ifdef MOTOR_MIXING_STARTUP_DELAY

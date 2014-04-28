@@ -31,6 +31,7 @@
 
 #include "firmwares/rotorcraft/guidance/guidance_v_ref.h"
 #include "firmwares/rotorcraft/guidance/guidance_v_adapt.h"
+#include "firmwares/rotorcraft/stabilization/stabilization_altitude_ndi_quat_int.h"
 
 #define GUIDANCE_V_MODE_KILL      0
 #define GUIDANCE_V_MODE_RC_DIRECT 1
