@@ -24,47 +24,11 @@
 
 /** @file subsystems/radio_control/sbus.h
  *
- * Futaba SBUS decoder
+ * Single SBUS radio_control
  */
 
-#include "std.h"
+#include "subsystems/radio_control/sbus_common.h"
 
-/**
- * Dummy macro to use radio.h file
- */
-#define RC_PPM_TICKS_OF_USEC(_v)        (_v)
-#define RC_PPM_SIGNED_TICKS_OF_USEC(_v) (_v)
-#define USEC_OF_RC_PPM_TICKS(_v)        (_v)
-
-/**
- * Generated code holding the description of a given
- * transmitter
- */
-#include "generated/radio.h"
-
-/**
- * Define number of channels.
- *
- * SBUS frame always have 16 channels
- * but only the X first one will be available
- * depending of the RC transmitter.
- * The radio XML file is used to assign the
- * input values to RC channels.
- */
-#define SBUS_BUF_LENGTH 24
-#define SBUS_NB_CHANNEL 16
-#define RADIO_CONTROL_NB_CHANNEL SBUS_NB_CHANNEL
-
-/**
- * SBUS structure
- */
-struct _sbus {
-  uint16_t pulses[SBUS_NB_CHANNEL]; ///< decoded values
-  bool_t frame_available;           ///< new frame available
-  uint8_t buffer[SBUS_BUF_LENGTH];  ///< input buffer
-  uint8_t idx;                      ///< input index
-  uint8_t status;                   ///< decoder state machine status
-};
 
 extern struct _sbus sbus;
 
