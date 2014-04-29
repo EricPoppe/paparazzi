@@ -110,4 +110,6 @@ extern struct Int32AltRefModel small_outer_ref_model;
 extern struct Int32AltRefModel large_inner_ref_model;
 extern struct Int32AltRefModel large_outer_ref_model;
 
+extern struct Int32Quat stab_att_sp_quat;
+
 #endif /* STABILIZATION_ALTITUDE_NDI_QUAT_INT_H */

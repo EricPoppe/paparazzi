@@ -39,7 +39,12 @@
 #include <stdlib.h>
 
 /* DEBUG VARIABLE, REMOVE */
-float test;
+float test1;
+float test2;
+float test3;
+float test4;
+float test5;
+float test6;
 
 struct Int32NDIAttitudeGains attitude_ndi_gains = {
 	{STABILIZATION_ATTITUDE_NDI_TILT_PGAIN, STABILIZATION_ATTITUDE_NDI_YAW_PGAIN},
@@ -56,9 +61,9 @@ struct Int32NDIAttitudeGains attitude_ndi_gains = {
 
 struct Int32Quat stabilization_att_sum_err_quat;
 struct Int32Eulers stabilization_att_sum_err;
-struct Int32Thrust attitude_thrust_command; // thrust command settings, limited by PPRZ_MAX
+struct Int16Thrust attitude_thrust_command; // thrust command calculated by controller, limited by PPRZ_MAX
 struct Int32Thrust attitude_thrust; // with INT32_STAB_ALT_T_FRAC
-struct Int32Thrust thrust_command;
+int16_t thrust_command[4]; // thrust command send to engines
 
 /* extern variables */
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
@@ -120,7 +125,13 @@ static void send_att_ref(void) {
 /* debug messages REMOVE*/
 static void send_control_test(void) {
   DOWNLINK_SEND_CONTROL_TEST(DefaultChannel, DefaultDevice,
-                                      &test);
+                                      &test1,
+                                      &test2,
+                                      &test3,
+                                      &test4,
+                                      &test5,
+                                      &test6
+                                      );
 }
 
 
@@ -147,10 +158,10 @@ void stabilization_attitude_init(void) {
   INT32_QUAT_ZERO( stabilization_att_sum_err_quat );
   INT_EULERS_ZERO( stabilization_att_sum_err );
 
-  thrust_command.T1 = 0;
-  thrust_command.T2 = 0;
-  thrust_command.T3 = 0;
-  thrust_command.T4 = 0;
+  thrust_command[0] = 0;
+  thrust_command[1] = 0;
+  thrust_command[2] = 0;
+  thrust_command[3] = 0;
 
 
 #if PERIODIC_TELEMETRY
@@ -210,18 +221,18 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
 #define OFFSET_AND_ROUND2(_a, _b) (((_a)+(1<<((_b)-1))-((_a)<0?1:0))>>(_b))
 
 /* calculate thrust setting COMMAND_THRUST based on real thrust */
-void attitude_tcommand_from_t(int32_t *tcom, int32_t *t){
+void attitude_tcommand_from_t(int16_t *tcom, int32_t *t){
 
 	/*TODO: full relation between thrust and COMMAND_THRUST*/
-	*tcom = (*t*1120 >> INT32_STAB_ALT_T_FRAC);
+	*tcom = (int16_t)(*t*1535 >> INT32_STAB_ALT_T_FRAC);
 
 }
 
-/* calculate real thrust based on thrust setting COMMAND_THRUST*/
-void attitude_t_from_tcommand(int32_t *t, int32_t *tcom){
+/* calculate real thrust based on thrust setting COMMAND_THRUST */
+void attitude_t_from_tcommand(int32_t *t, int16_t *tcom){
 
 	/*TODO: full relation between thrust and COMMAND_THRUST*/
-	*t = (*tcom/1120) << INT32_STAB_ALT_T_FRAC;
+	*t = ((int32_t)(*tcom/1535)) << INT32_STAB_ALT_T_FRAC;
 
 }
 
@@ -236,7 +247,12 @@ void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des){
 }
 
 /* thrust limiter, tavg +- available tdiff yaw +- pitch and roll tdiff, apply limits*/
-static void attitude_limit_t(){
+static void attitude_limit_t(void){
+
+	/*DEBUG REMOVE*/
+	rate_thrust_diff.yaw = 0;
+	rate_thrust_diff.pitch = 0;
+	rate_thrust_diff.roll = 0;
 
 	/* limit tavg between 0 and max thrust */
 	if (altitude_t_avg > getMaxT())
@@ -293,10 +309,10 @@ static void attitude_limit_t(){
 }
 
 /* calculate maximum thrust */
-int32_t getMaxT(){
+int32_t getMaxT(void){
 
 	/*TODO: real max thrust */
-	int32_t max_tcommand;
+	int16_t max_tcommand;
 	max_tcommand = MAX_PPRZ;
 	int32_t max_thrust;
 	attitude_t_from_tcommand(&max_thrust, &max_tcommand);
@@ -337,31 +353,34 @@ static void attitude_run_fb(struct Int32Rates *rate_sp, struct Int32NDIAttitudeG
 void stabilization_attitude_thrust_run(bool_t motors_on) {
 
 	if (autopilot_mode == AP_MODE_KILL){
-		thrust_command.T1 = 3000;
-		thrust_command.T2 = 3000;
-		thrust_command.T3 = 3000;
-		thrust_command.T4 = 3000;
-
+		thrust_command[0] = 3000;
+		thrust_command[1] = 3000;
+		thrust_command[2] = 3000;
+		thrust_command[3] = 3000;
 	}
 	else if (motors_on) {
-  	thrust_command.T1 = attitude_thrust_command.T1;
-  	thrust_command.T2 = attitude_thrust_command.T2;
-  	thrust_command.T3 = attitude_thrust_command.T3;
-  	thrust_command.T4 = attitude_thrust_command.T4;
+  	thrust_command[0] = attitude_thrust_command.T1;
+  	thrust_command[1] = attitude_thrust_command.T2;
+  	thrust_command[2] = attitude_thrust_command.T3;
+  	thrust_command[3] = attitude_thrust_command.T4;
   }
   else {
-  	thrust_command.T1 = -9600;
-  	thrust_command.T2 = -9600;
-  	thrust_command.T3 = -9600;
-  	thrust_command.T4 = -9600;
+  	thrust_command[0] = -9600;
+  	thrust_command[1] = -9600;
+  	thrust_command[2] = -9600;
+  	thrust_command[3] = -9600;
   }
-	printf("setting the thrust to %i \n",thrust_command.T1);
+	thrust_command[0] = 10;
+	thrust_command[1] = 0;
+	thrust_command[2] = 0;
+	thrust_command[3] = 0;
+
 }
 
 void stabilization_attitude_run(bool_t enable_integrator) {
 
 	/*DEBUG REMOVE*/
-	enable_integrator = TRUE;
+	//enable_integrator = TRUE;
 
   /* set altitude setpoints in case of KILL or FAILSAFE */
 	if (autopilot_mode == AP_MODE_KILL){
@@ -375,7 +394,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
 	/* run altitude controller to find quat_sp and altitude_t_avg */
   stabilization_altitude_run(enable_integrator);
-  stab_att_sp_quat = altitude_attitude_sp;
+  stab_att_ndi_sp_quat = altitude_attitude_sp;
 
   /*
    * Update reference
@@ -401,7 +420,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   int64_t arg_acos;
   arg_acos = (1<<2*INT32_QUAT_FRAC) - 2*(att_err.qx*att_err.qx + att_err.qy*att_err.qy);
 
-  /* TODO: acos in BFP, currently not precise enough */
+  /* TODO: acos in BFP*/
   int32_t alpha;
   float alpha_f;
   alpha_f = acosf(QUAT1_FLOAT_OF_BFP(QUAT1_FLOAT_OF_BFP(arg_acos)));
@@ -479,6 +498,14 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   attitude_tcommand_from_t(&attitude_thrust_command.T2, &attitude_thrust.T2);
   attitude_tcommand_from_t(&attitude_thrust_command.T3, &attitude_thrust.T3);
   attitude_tcommand_from_t(&attitude_thrust_command.T4, &attitude_thrust.T4);
+
+  /*DEBUG REMOVE*/
+  test1 = FLOAT_OF_BFP(altitude_t_avg,INT32_STAB_ALT_T_FRAC);
+  test2 = ((float)(altitude_z_sp)/((int64_t)1<<(36)));
+  test3 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
+  test4 = alt_test;
+  test5 = 0;
+  test6 = 0;
 
 }
 

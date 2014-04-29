@@ -16,7 +16,7 @@
     </target>
 
 	<!-- Subsystem section -->
-    <subsystem name="motor_mixing"/>
+    <subsystem name="motor_mixing_ndi"/>
     <subsystem name="actuators" type="ardrone2"/>
     <subsystem name="imu" type="ardrone2"/>
     <subsystem name="gps" type="ublox"/>
@@ -59,13 +59,13 @@
   </section>
 
   <command_laws>
-    <call fun="stabilization_attitude_thrust_run(autopilot_motors_on)"/>
-    <set servo="TOP_LEFT" value="thrust_command.T1"/>
-    <set servo="TOP_RIGHT" value="thrust_command.T2"/>
-    <set servo="BOTTOM_RIGHT" value="thrust_command.T3"/>
-    <set servo="BOTTOM_LEFT" value="thrust_command.T4"/>
+    <call fun="motor_mixing_run(autopilot_motors_on,FALSE,values)"/>
+    <set servo="TOP_LEFT" value="motor_mixing.commands[0]"/>
+    <set servo="TOP_RIGHT" value="motor_mixing.commands[1]"/>
+    <set servo="BOTTOM_RIGHT" value="motor_mixing.commands[2]"/>
+    <set servo="BOTTOM_LEFT" value="motor_mixing.commands[3]"/>
   </command_laws>
-  
+    
   <section name="IMU" prefix="IMU_">
     <!-- Accelero -->
     <define name="ACCEL_X_NEUTRAL" value="2048"/>
@@ -107,7 +107,7 @@
     <define name="SONAR_SENS" value="0.00034"/>
     <define name="SONAR_MAX_RANGE" value="2.2"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
-    <define name="SONAR_VARIANCE_THRESHOLD" VALUE="2.0"/>
+    <define name="SONAR_VARIANCE_THRESHOLD" value="2.0"/>
   </section>
   
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
@@ -181,9 +181,9 @@
   
   <section name="STABILIZATION_ALTITUDE_NDI" prefix="STABILIZATION_ALTITUDE_NDI_">
     <!-- reference -->
-    <define name="SMALL_ZD_REF_OMEGA" value="10"/>
+    <define name="SMALL_ZD_REF_OMEGA" value="20"/>
     <define name="SMALL_ZD_REF_ZETA" value="1"/>
-    <define name="LARGE_ZD_REF_OMEGA" value="10"/>
+    <define name="LARGE_ZD_REF_OMEGA" value="20"/>
     <define name="LARGE_ZD_REF_ZETA" value="1"/>
     
     <define name="SMALL_Z_REF_OMEGA" value="3"/>
@@ -192,13 +192,13 @@
     <define name="LARGE_Z_REF_ZETA" value="1"/>
         
     <!-- feedback ALT_GAINS_FRAC = 7 -->
-    <define name="SMALL_INNER_PGAIN" value="256"/>
-    <define name="SMALL_INNER_IGAIN" value="128"/>
-    <define name="SMALL_INNER_DGAIN" value="128"/>
+    <define name="SMALL_INNER_PGAIN" value="1000"/>
+    <define name="SMALL_INNER_IGAIN" value="1000"/>
+    <define name="SMALL_INNER_DGAIN" value="1"/>
 
-    <define name="SMALL_OUTER_PGAIN" value="256"/>
-    <define name="SMALL_OUTER_IGAIN" value="128"/>
-    <define name="SMALL_OUTER_DGAIN" value="128"/>
+    <define name="SMALL_OUTER_PGAIN" value="1000"/>
+    <define name="SMALL_OUTER_IGAIN" value="1"/>
+    <define name="SMALL_OUTER_DGAIN" value="1"/>
     
     <define name="LARGE_INNER_PGAIN" value="256"/>
     <define name="LARGE_INNER_IGAIN" value="128"/>
@@ -267,7 +267,7 @@
     <define name="ARM" value="0.126"/>
   </section>
   
-  <section name="QUAT_FLIGHT_MODE_TRANSITION" prefix = "QUAT_FLIGHT_MODE_TRANSITION_">
+  <section name="QUAT_FLIGHT_MODE_TRANSITION" prefix="QUAT_FLIGHT_MODE_TRANSITION_">
     <define name="LIMIT_LOW" value="RadOfDeg(30.)"/>
     <define name="LIMIT_HIGH" value="RadOfDeg(45.)"/>
   </section>
@@ -303,10 +303,10 @@
   </section>
 
   <section name="AUTOPILOT">
-    <define name="MODE_STARTUP" value="AP_MODE_NAV_NDI"/>
+    <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV_NDI"/>
+    <define name="MODE_AUTO1" value="AP_MODE_NAV_NDI"/>
+    <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
   </section>
 
   <section name="BAT">

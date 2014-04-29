@@ -31,7 +31,7 @@
 #include "generated/airframe.h"
 
 extern void stabilization_rate_ndi_run(bool_t in_flight);
-extern void stabilization_rate_ndi_init();
+extern void stabilization_rate_ndi_init(void);
 
 /* Definition of structs */
 

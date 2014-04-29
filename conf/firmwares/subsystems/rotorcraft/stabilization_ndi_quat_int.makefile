@@ -1,6 +1,6 @@
 STAB_ATT_CFLAGS  = -DSTABILIZATION_ATTITUDE_TYPE_INT
 STAB_ATT_CFLAGS += -DSTABILIZATION_ATTITUDE_TYPE_H=\"stabilization/stabilization_attitude_ndi_quat_int.h\"
-STAB_ATT_SRCS  = $(SRC_FIRMWARE)/stabilization/stabilization_attitude_ref_quat_int.c
+STAB_ATT_SRCS  = $(SRC_FIRMWARE)/stabilization/stabilization_attitude_ndi_ref_quat_int.c
 STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_rate_ref_int.c
 STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_rate_ndi_int.c
 STAB_ATT_SRCS += $(SRC_FIRMWARE)/stabilization/stabilization_attitude_ndi_quat_int.c

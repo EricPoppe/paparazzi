@@ -180,6 +180,7 @@ int64_t large_zdd_sp; //virtual input for NDI part, with INT64_STAB_ALT_ZDD_FRAC
 /* extern variables, setpoints for attitude controller */
 struct Int32Quat altitude_attitude_sp;
 int32_t altitude_t_avg;
+struct Int32Quat stab_att_sp_quat;
 
 /* adaptation */
 bool_t altitude_nominal_throttle = GUIDANCE_V_NOMINAL_HOVER_THROTTLE;
@@ -274,7 +275,7 @@ static void altitude_run_fb(struct Int32NDIAltitudeGains *gains, int64_t *err, i
 
 }
 
-static void altitude_calc_mass(){
+static void altitude_calc_mass(void){
 
 	/*TODO: invert thrust relation with COMMAND_THRUST*/
 
@@ -310,7 +311,7 @@ static void altitude_run_small_outer(bool_t enable_integrator){
 		small_z_sum_err = 0;
 
 	int64_t small_outer_zd_err; // with INT64_STAB_ALT_ZD_FRAC
-	small_outer_zd_err = (small_outer_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (int64_t)((stateGetSpeedNed_i()->z) << (INT64_STAB_ALT_ZD_FRAC - INT32_SPEED_FRAC));
+	small_outer_zd_err = ((small_outer_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (int64_t)((stateGetSpeedNed_i()->z) << (INT64_STAB_ALT_ZD_FRAC - INT32_SPEED_FRAC)));
 
 	/* run feedback loop */
 	altitude_run_fb(&small_outer_gains, &small_outer_z_err, &small_z_sum_err, &small_outer_zd_err, &small_zd_sp);
@@ -352,7 +353,7 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 		small_zd_sum_err = 0;
 
 	int64_t small_inner_zdd_err; // with INT64_STAB_ALT_ZDD_FRAC
-	small_inner_zdd_err = ((small_inner_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC))) - ((((int64_t)stateGetAccelNed_i()->z) << (INT64_STAB_ALT_ZDD_FRAC - INT32_ACCEL_FRAC)));
+	small_inner_zdd_err = (((small_inner_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC))) - ((((int64_t)stateGetAccelNed_i()->z) << (INT64_STAB_ALT_ZDD_FRAC - INT32_ACCEL_FRAC))));
 
 	/* run feedback loop */
 	altitude_run_fb(&small_inner_gains, &small_inner_zd_err, &small_zd_sum_err, &small_inner_zdd_err, &small_zdd_fb);
@@ -366,14 +367,14 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 	int64_t g_m_zdd_small; // with INT64_STAB_ALT_ZDD_FRAC
 	g_m_zdd_small = BFP_OF_REAL(9.80665, INT64_STAB_ALT_ZDD_FRAC) - (small_zdd_sp);
 
-	/*TODO: base on commanded thrust tilt angle??*/
+	/*TODO: base on commanded thrust tilt angle??, DIVISION IN INT */
 	int64_t Ktilt; // tilt correction for vertical thrust based on state, with INT64_STAB_ALT_ZDD_FRAC
-	Ktilt = (int64_t)((BFP_OF_REAL(1,INT32_QUAT_FRAC)/
-			(INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qi,stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC) -
-					INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qx,stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC) -
-					INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qy,stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC) +
-					INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qz,stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC)))
-					<< INT64_STAB_ALT_ZDD_FRAC);
+	Ktilt = ((((int64_t)1)*(1<<(2*15)))/
+			((int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qi,stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC) -
+					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qx,stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC) -
+					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qy,stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC) +
+					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qz,stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC)))
+					<< (INT64_STAB_ALT_ZDD_FRAC - INT32_QUAT_FRAC);
 
 	small_tavg = (int32_t)(((INT_MULT_RSHIFT(g_m_zdd_small,Ktilt,INT64_STAB_ALT_ZDD_FRAC)*mass) >> (INT32_STAB_ALT_MASS_FRAC + INT64_STAB_ALT_ZDD_FRAC - INT32_STAB_ALT_T_FRAC))/4);
 
@@ -475,6 +476,7 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 
 
 void stabilization_altitude_run(bool_t enable_integrator) {
+
 
 	/* run altitude reference models */
 	stabilization_altitude_update_ref(&altitude_z_sp, &small_outer_ref_model, &small_outer_ref_model_state);
@@ -607,4 +609,5 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 
   INT32_QUAT_COMP(altitude_attitude_sp, q_h, q_v);
   INT32_QUAT_NORMALIZE(altitude_attitude_sp);
+
 }
