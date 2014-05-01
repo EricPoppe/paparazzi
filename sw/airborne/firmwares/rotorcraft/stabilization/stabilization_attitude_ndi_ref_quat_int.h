@@ -32,6 +32,11 @@
 
 #include "stabilization_attitude_ref_int.h"
 
+struct Int32RefModel {
+	struct Int32Rates omega;
+	struct Int32Rates zeta;
+};
+
 extern struct Int32Quat   stab_att_ndi_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Quat   stab_att_ref_quat;  ///< with #INT32_QUAT_FRAC
 

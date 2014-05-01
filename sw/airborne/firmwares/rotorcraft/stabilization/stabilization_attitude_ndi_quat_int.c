@@ -27,6 +27,7 @@
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_rc_setpoint.h"
 #include "firmwares/rotorcraft/stabilization/stabilization_attitude_quat_transformations.h"
 #include "stabilization_attitude_ndi_quat_int.h"
+#include "firmwares/rotorcraft/autopilot.h"
 
 #include <stdio.h>
 #include "math/pprz_algebra_float.h"
@@ -38,6 +39,9 @@
 #include "std.h"
 #include <stdlib.h>
 
+/*DEBUG REMOVE*/
+#include "subsystems/radio_control.h"
+
 /* DEBUG VARIABLE, REMOVE */
 float test1;
 float test2;
@@ -45,6 +49,22 @@ float test3;
 float test4;
 float test5;
 float test6;
+bool_t stabilization_override_on = STABILIZATION_ATTITUDE_NDI_OVERRIDE_ON;
+float phi_sp = STABILIZATION_ATTITUDE_NDI_PHI_SP;
+float theta_sp = STABILIZATION_ATTITUDE_NDI_THETA_SP;
+float psi_sp = STABILIZATION_ATTITUDE_NDI_PSI_SP;
+float phi_d_sp = STABILIZATION_ATTITUDE_NDI_PHI_D_SP;
+float theta_d_sp = STABILIZATION_ATTITUDE_NDI_THETA_D_SP;
+float psi_d_sp = STABILIZATION_ATTITUDE_NDI_PSI_D_SP;
+float z_sp = STABILIZATION_ATTITUDE_NDI_Z_SP;
+float z_d_sp = STABILIZATION_ATTITUDE_NDI_Z_D_SP;
+bool_t att_sp = STABILIZATION_ATTITUDE_NDI_ATT_SP;
+bool_t att_d_sp = STABILIZATION_ATTITUDE_NDI_ATT_D_SP;
+bool_t alt_sp = STABILIZATION_ATTITUDE_NDI_ALT_SP;
+bool_t alt_d_sp = STABILIZATION_ATTITUDE_NDI_ALT_D_SP;
+struct Int32Quat quat_override_sp;
+struct Int32Vect2 phi_theta_override_sp;
+int32_t psi_override_sp;
 
 struct Int32NDIAttitudeGains attitude_ndi_gains = {
 	{STABILIZATION_ATTITUDE_NDI_TILT_PGAIN, STABILIZATION_ATTITUDE_NDI_YAW_PGAIN},
@@ -68,6 +88,7 @@ int16_t thrust_command[4]; // thrust command send to engines
 /* extern variables */
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
+int32_t attitude_t_avg = 0;
 
 //struct Int32Rates stab_rate_sp; // rate setpoint commanded by attitude controller
 struct Int32ThrustDiff rate_thrust_diff; // thrust differences commanded by rate controller, INT32_STAB_ALT_T_FRAC
@@ -251,8 +272,8 @@ static void attitude_limit_t(void){
 
 	/*DEBUG REMOVE*/
 	rate_thrust_diff.yaw = 0;
-	rate_thrust_diff.pitch = 0;
-	rate_thrust_diff.roll = 0;
+//	rate_thrust_diff.pitch = 0;
+//	rate_thrust_diff.roll = 0;
 
 	/* limit tavg between 0 and max thrust */
 	if (altitude_t_avg > getMaxT())
@@ -273,13 +294,13 @@ static void attitude_limit_t(void){
 	else if (rate_thrust_diff.yaw  < -max_yaw_diff)
 		rate_thrust_diff.yaw  = -max_yaw_diff;
 
-	/* add tdiff yaw to tavg, 1 CW, 2 CCW, 3 CW, 4 CCW */
+	/* add tdiff yaw to tavg, 1 CW, 2 CCW, 3 CW, 4 CCW (seen from above)*/
 	attitude_thrust.T1 = altitude_t_avg - rate_thrust_diff.yaw;
 	attitude_thrust.T2 = altitude_t_avg + rate_thrust_diff.yaw;
 	attitude_thrust.T3 = altitude_t_avg - rate_thrust_diff.yaw;
 	attitude_thrust.T4 = altitude_t_avg + rate_thrust_diff.yaw;
 
-	/* add tdiff pitch and roll */
+	/* add tdiff pitch and roll, NW, NE, SE, SW (seen from above) */
 	attitude_thrust.T1 = attitude_thrust.T1 + rate_thrust_diff.pitch/4 + rate_thrust_diff.roll/4;
 	attitude_thrust.T2 = attitude_thrust.T2 + rate_thrust_diff.pitch/4 - rate_thrust_diff.roll/4;
 	attitude_thrust.T3 = attitude_thrust.T3 - rate_thrust_diff.pitch/4 - rate_thrust_diff.roll/4;
@@ -306,7 +327,73 @@ static void attitude_limit_t(void){
 	else if (attitude_thrust.T4  < 0)
 		attitude_thrust.T4  = 0;
 
+	attitude_t_avg = (attitude_thrust.T1 + attitude_thrust.T2 + attitude_thrust.T3 + attitude_thrust.T4)/4;
+
 }
+
+///* thrust limiter, tavg +- available pitch and roll tdiff +- available tdiff yaw, apply limits*/
+//static void attitude_limit_t(void){
+//
+//	/*DEBUG REMOVE*/
+//	rate_thrust_diff.yaw = 0;
+////	rate_thrust_diff.pitch = 0;
+////	rate_thrust_diff.roll = 0;
+//
+//	/* limit tavg between 0 and max thrust */
+//	if (altitude_t_avg > getMaxT())
+//		altitude_t_avg = getMaxT();
+//	else if (altitude_t_avg < 0)
+//		altitude_t_avg = 0;
+//
+//	/* find available tdiff for roll and pitch control */
+//	int32_t max_yaw_diff;
+//	if ((getMaxT() - altitude_t_avg) < (altitude_t_avg - 0))
+//		max_yaw_diff = getMaxT() - altitude_t_avg;
+//	else
+//		max_yaw_diff = altitude_t_avg - 0;
+//
+//	/* limit thrust diff for yaw control between max and -max */
+//	if (rate_thrust_diff.yaw > max_yaw_diff)
+//		rate_thrust_diff.yaw  = max_yaw_diff;
+//	else if (rate_thrust_diff.yaw  < -max_yaw_diff)
+//		rate_thrust_diff.yaw  = -max_yaw_diff;
+//
+//	/* add tdiff yaw to tavg, 1 CW, 2 CCW, 3 CW, 4 CCW (seen from above)*/
+//	attitude_thrust.T1 = altitude_t_avg - rate_thrust_diff.yaw;
+//	attitude_thrust.T2 = altitude_t_avg + rate_thrust_diff.yaw;
+//	attitude_thrust.T3 = altitude_t_avg - rate_thrust_diff.yaw;
+//	attitude_thrust.T4 = altitude_t_avg + rate_thrust_diff.yaw;
+//
+//	/* add tdiff pitch and roll, NW, NE, SE, SW (seen from above) */
+//	attitude_thrust.T1 = attitude_thrust.T1 + rate_thrust_diff.pitch/4 + rate_thrust_diff.roll/4;
+//	attitude_thrust.T2 = attitude_thrust.T2 + rate_thrust_diff.pitch/4 - rate_thrust_diff.roll/4;
+//	attitude_thrust.T3 = attitude_thrust.T3 - rate_thrust_diff.pitch/4 - rate_thrust_diff.roll/4;
+//	attitude_thrust.T4 = attitude_thrust.T4 - rate_thrust_diff.pitch/4 + rate_thrust_diff.roll/4;
+//
+//	/* limit between 0 and max thrust */
+//	if (attitude_thrust.T1 > getMaxT())
+//		attitude_thrust.T1 = getMaxT();
+//	else if (attitude_thrust.T1  < 0)
+//		attitude_thrust.T1  = 0;
+//
+//	if (attitude_thrust.T2 > getMaxT())
+//		attitude_thrust.T2 = getMaxT();
+//	else if (attitude_thrust.T2  < 0)
+//		attitude_thrust.T2  = 0;
+//
+//	if (attitude_thrust.T3 > getMaxT())
+//		attitude_thrust.T3 = getMaxT();
+//	else if (attitude_thrust.T3  < 0)
+//		attitude_thrust.T3  = 0;
+//
+//	if (attitude_thrust.T4 > getMaxT())
+//		attitude_thrust.T4 = getMaxT();
+//	else if (attitude_thrust.T4  < 0)
+//		attitude_thrust.T4  = 0;
+//
+//	attitude_t_avg = (attitude_thrust.T1 + attitude_thrust.T2 + attitude_thrust.T3 + attitude_thrust.T4)/4;
+//
+//}
 
 /* calculate maximum thrust */
 int32_t getMaxT(void){
@@ -370,17 +457,17 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
   	thrust_command[2] = -9600;
   	thrust_command[3] = -9600;
   }
-	thrust_command[0] = 10;
-	thrust_command[1] = 0;
-	thrust_command[2] = 0;
-	thrust_command[3] = 0;
+//	thrust_command[0] = 0;
+//	thrust_command[1] = 0;
+//	thrust_command[2] = 0;
+//	thrust_command[3] = 0;
 
 }
 
 void stabilization_attitude_run(bool_t enable_integrator) {
 
 	/*DEBUG REMOVE*/
-	//enable_integrator = TRUE;
+	enable_integrator = TRUE;
 
   /* set altitude setpoints in case of KILL or FAILSAFE */
 	if (autopilot_mode == AP_MODE_KILL){
@@ -392,6 +479,18 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 	  altitude_zd_sp = ((0.5)*(((int64_t)1)<<(36)));
 	}
 
+	  /*DEBUG REMOVE tune altitude*/
+	  if (att_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+
+	  	psi_sp = stateGetNedToBodyEulers_f()->psi;
+
+	  	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
+	  	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
+	  	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
+	  	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
+
+    }
+
 	/* run altitude controller to find quat_sp and altitude_t_avg */
   stabilization_altitude_run(enable_integrator);
   stab_att_ndi_sp_quat = altitude_attitude_sp;
@@ -399,6 +498,14 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   /*
    * Update reference
    */
+
+//  /*DEBUG REMOVE tune attitude*/
+//  if (att_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+//	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
+//	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
+//	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
+//	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
+//  }
 
   stabilization_attitude_ref_update();
 
@@ -487,6 +594,14 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   attitude_run_fb(&stab_rate_sp, &attitude_ndi_gains, &alpha, &beta, &psi, &rate_err);
 
   /* run inner loop rate control, calculates thrust changes for attitude control rate_thrust */
+
+  /*DEBUG REMOVE*/
+  if (att_d_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+  	stab_rate_sp.p = RATE_BFP_OF_REAL(phi_d_sp);
+  	stab_rate_sp.q = RATE_BFP_OF_REAL(theta_d_sp);
+  	stab_rate_sp.r = RATE_BFP_OF_REAL(psi_d_sp);
+  }
+
   stabilization_rate_ndi_run(enable_integrator);
 
   /* limit thrusts with pitch and roll priority over tavg and tavg priority over yaw */
@@ -499,22 +614,46 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   attitude_tcommand_from_t(&attitude_thrust_command.T3, &attitude_thrust.T3);
   attitude_tcommand_from_t(&attitude_thrust_command.T4, &attitude_thrust.T4);
 
-  /*DEBUG REMOVE*/
-  test1 = FLOAT_OF_BFP(altitude_t_avg,INT32_STAB_ALT_T_FRAC);
-  test2 = ((float)(altitude_z_sp)/((int64_t)1<<(36)));
-  test3 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
-  test4 = alt_test;
+//  /*DEBUG REMOVE att rate tuning*/
+//  test1 = FLOAT_OF_BFP(rate_thrust_diff.yaw,INT32_STAB_ALT_T_FRAC);
+//  test2 = ((float)(stab_rate_sp.r)/((int32_t)1<<(INT32_RATE_FRAC)));
+//  test3 = FLOAT_OF_BFP(stateGetBodyRates_i()->r,INT32_RATE_FRAC);
+//  test4 = ((float)(stab_rate_ref.r)/((int64_t)1<<(RATE_REF_RATE_FRAC)));
+//  test5 = 0;
+//  test6 = 0;
+
+//  /*DEBUG REMOVE att tuning*/
+//  test1 = FLOAT_OF_BFP(rate_thrust_diff.yaw,INT32_STAB_ALT_T_FRAC);
+//  test2 = (psi_sp);
+//  test3 = QUAT1_FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qz);
+//  test4 = QUAT1_FLOAT_OF_BFP(stab_att_ref_quat.qz);
+//  test5 = 0;
+//  test6 = 0;
+
+//  /*DEBUG REMOVE sp's*/
+//  test1 = FLOAT_OF_BFP(stab_att_sp_quat.qx,INT32_QUAT_FRAC);
+//  test2 = FLOAT_OF_BFP(stab_att_sp_quat.qy,INT32_QUAT_FRAC);
+//  test3 = FLOAT_OF_BFP(stab_att_sp_quat.qz,INT32_QUAT_FRAC);
+//  test4 = FLOAT_OF_BFP(altitude_attitude_sp.qx,INT32_QUAT_FRAC);
+//  test5 = FLOAT_OF_BFP(altitude_attitude_sp.qy,INT32_QUAT_FRAC);
+//  test6 = FLOAT_OF_BFP(altitude_attitude_sp.qz,INT32_QUAT_FRAC);
+
+  /*DEBUG REMOVE sp's*/
+  test1 = alt_test;
+  test2 = 0;//((float)(large_zd_sp)/((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
+  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
+  test4 = altitude_t_avg;
   test5 = 0;
   test6 = 0;
-
 }
 
-void stabilization_attitude_read_rc(bool_t in_flight) {
+void stabilization_attitude_read_rc(bool_t in_flight, bool_t in_carefree, bool_t coordinated_turn) {
   struct FloatQuat q_sp;
 #if USE_EARTH_BOUND_RC_SETPOINT
-  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight);
+  stabilization_attitude_read_rc_setpoint_quat_earth_bound_f(&q_sp, in_flight, in_carefree, coordinated_turn);
 #else
-  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight);
+  stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
 #endif
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+
 }

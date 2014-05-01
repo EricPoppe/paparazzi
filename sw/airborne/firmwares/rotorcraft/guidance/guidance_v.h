@@ -42,6 +42,9 @@
 #define GUIDANCE_V_MODE_NAV_NDI   6
 #define GUIDANCE_V_MODE_HOVER_NDI 7
 
+///*DEBUG REMOVE*/
+//#define GUIDANCE_V_MODE_TUNE_NDI  8
+
 extern uint8_t guidance_v_mode;
 
 /** altitude setpoint in meters (input).

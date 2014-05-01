@@ -359,6 +359,7 @@ void autopilot_set_mode(uint8_t new_autopilot_mode) {
       case AP_MODE_ATTITUDE_CLIMB:
       case AP_MODE_ATTITUDE_Z_HOLD:
       case AP_MODE_ATTITUDE_Z_HOLD_NDI:
+      case AP_MODE_TUNE_NDI: /* << REMOVE DEBUG*/
         guidance_h_mode_changed(GUIDANCE_H_MODE_ATTITUDE);
         break;
       case AP_MODE_FORWARD:
@@ -415,6 +416,7 @@ void autopilot_set_mode(uint8_t new_autopilot_mode) {
         guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER);
         break;
       case AP_MODE_ATTITUDE_Z_HOLD_NDI:
+      case AP_MODE_TUNE_NDI: /*<<DEBUG REMOVE*/
     	guidance_v_mode_changed(GUIDANCE_V_MODE_HOVER_NDI);
     	break;
       case AP_MODE_HOME:

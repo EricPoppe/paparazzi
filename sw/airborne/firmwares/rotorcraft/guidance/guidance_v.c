@@ -353,6 +353,20 @@ void guidance_v_run(bool_t in_flight) {
       break;
     }
 
+//    /*DEBUG REMOVE*/
+//  case GUIDANCE_V_MODE_HOVER_NDI:
+//  	if (TUNE_NDI_SKIP_Z){
+//      altitude_z_sp = 0;
+//      altitude_zd_sp = ((int64_t)TUNE_NDI_ZD_ZP) << (INT64_STAB_ALT_X_REF_FRAC - INT32_SPEED_FRAC);
+//      altitude_vert_mode = VERTICAL_MODE_CLIMB;
+//  	}
+//  	else {
+//      altitude_z_sp = ((int64_t)TUNE_NDI_Z_SP) << (INT64_STAB_ALT_X_REF_FRAC - INT32_POS_FRAC);
+//      altitude_zd_sp = 0;
+//      altitude_vert_mode = VERTICAL_MODE_ALT;
+//  	}
+//      break;
+
     default:
     break;
   }

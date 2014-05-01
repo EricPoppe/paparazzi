@@ -4,7 +4,7 @@
  <!-- messages from modem or sim to server -->
  <class name="telemetry">
 
-	<!-- control loop test messages REMOVE -->
+	<!-- control loop test messages DEBUG REMOVE -->
    <message name="CONTROL_TEST" id="215">
      <field name="test1" type="float"/>
      <field name="test2" type="float"/>

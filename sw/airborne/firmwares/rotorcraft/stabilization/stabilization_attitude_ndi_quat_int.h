@@ -73,4 +73,23 @@ extern void attitude_t_from_tcommand(int32_t *t, int16_t *tcom);
 extern int32_t getMaxT(void);
 extern void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des);
 
+extern int32_t attitude_t_avg;
+
+/*DEBUG REMOVE*/
+extern bool_t stabilization_override_on;
+extern float phi_sp;
+extern float theta_sp;
+extern float psi_sp;
+extern float phi_d_sp;
+extern float theta_d_sp;
+extern float psi_d_sp;
+extern float z_sp;
+extern float z_d_sp;
+
+extern bool_t att_sp;
+extern bool_t att_d_sp;
+extern bool_t alt_sp;
+extern bool_t alt_d_sp;
+
+
 #endif /* STABILIZATION_ATTITUDE_NDI_QUAT_INT_H */

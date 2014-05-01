@@ -2,7 +2,26 @@
 
 <settings>
   <dl_settings>
-
+  
+    <dl_settings NAME="Setpoint">
+        <dl_setting var="stabilization_override_on" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="override_on" param="STABILIZATION_ATTITUDE_NDI_OVERRIDE_ON">
+          <strip_button name="SP ON" value="1"/>
+          <strip_button name="SP OFF" value="0"/>
+        </dl_setting>
+        <dl_setting var="att_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="att sp" param="STABILIZATION_ATTITUDE_NDI_ATT_SP"/>
+        <dl_setting var="att_d_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="att d sp" param="STABILIZATION_ATTITUDE_NDI_ATT_D_SP"/>
+        <dl_setting var="alt_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="alt sp" param="STABILIZATION_ATTITUDE_NDI_ALT_SP"/>
+        <dl_setting var="alt_d_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="alt d sp" param="STABILIZATION_ATTITUDE_NDI_ALT_D_SP"/>
+        <dl_setting var="phi_sp" min="-1.5" step="0.01" max="1.5"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="phi sp" param="STABILIZATION_ATTITUDE_NDI_PHI_SP"/>
+        <dl_setting var="theta_sp" min="-1.5" step="0.01" max="1.5"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="theta sp" param="STABILIZATION_ATTITUDE_NDI_THETA_SP"/>
+        <dl_setting var="psi_sp" min="-1.57" step="0.01" max="1.57"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="psi sp" param="STABILIZATION_ATTITUDE_NDI_PSI_SP"/>
+        <dl_setting var="phi_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="phi d sp" param="STABILIZATION_ATTITUDE_NDI_PHI_D_SP"/>
+        <dl_setting var="theta_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="theta d sp" param="STABILIZATION_ATTITUDE_NDI_THETA_D_SP"/>
+        <dl_setting var="psi_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="psi d sp" param="STABILIZATION_ATTITUDE_NDI_PSI_D_SP"/>
+        <dl_setting var="z_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="z sp" param="STABILIZATION_ATTITUDE_NDI_Z_SP"/>
+        <dl_setting var="z_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="z d sp" param="STABILIZATION_ATTITUDE_NDI_Z_D_SP"/>
+    </dl_settings>
+  
     <dl_settings NAME="Att Loop">
       <dl_setting var="attitude_ndi_gains.p.tilt" min="1" step="1" max="8000"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="pgain tilt" param="STABILIZATION_ATTITUDE_NDI_TILT_PGAIN"/>
       <dl_setting var="attitude_ndi_gains.d.tilt" min="1" step="1" max="8000"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="dgain tilt" param="STABILIZATION_ATTITUDE_NDI_TILT_DGAIN"/>
@@ -11,20 +30,20 @@
     </dl_settings>
 
 	<dl_settings NAME="Att rate Loop">
-      <dl_setting var="rate_ndi_gains.p.p" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="pgain p" param="STABILIZATION_RATE_NDI_P_PGAIN"/>
-      <dl_setting var="rate_ndi_gains.i.p" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="igain p" param="STABILIZATION_RATE_NDI_P_IGAIN"/>
-      <dl_setting var="rate_ndi_gains.d.p" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="dgain p" param="STABILIZATION_RATE_NDI_P_DGAIN"/>
-      <dl_setting var="rate_ndi_gains.ff.p" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain p" param="STABILIZATION_RATE_NDI_P_FFGAIN"/>	
+      <dl_setting var="rate_ndi_gains.p.p" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="pgain p" param="STABILIZATION_RATE_NDI_P_PGAIN"/>
+      <dl_setting var="rate_ndi_gains.i.p" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="igain p" param="STABILIZATION_RATE_NDI_P_IGAIN"/>
+      <dl_setting var="rate_ndi_gains.d.p" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="dgain p" param="STABILIZATION_RATE_NDI_P_DGAIN"/>
+      <dl_setting var="rate_ndi_gains.ff.p" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain p" param="STABILIZATION_RATE_NDI_P_FFGAIN"/>	
       
-      <dl_setting var="rate_ndi_gains.p.q" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="pgain q" param="STABILIZATION_RATE_NDI_Q_PGAIN"/>
-      <dl_setting var="rate_ndi_gains.i.q" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="igain q" param="STABILIZATION_RATE_NDI_Q_IGAIN"/>
-      <dl_setting var="rate_ndi_gains.d.q" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="dgain q" param="STABILIZATION_RATE_NDI_Q_DGAIN"/>
-      <dl_setting var="rate_ndi_gains.ff.q" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain q" param="STABILIZATION_RATE_NDI_Q_FFGAIN"/>	
+      <dl_setting var="rate_ndi_gains.p.q" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="pgain q" param="STABILIZATION_RATE_NDI_Q_PGAIN"/>
+      <dl_setting var="rate_ndi_gains.i.q" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="igain q" param="STABILIZATION_RATE_NDI_Q_IGAIN"/>
+      <dl_setting var="rate_ndi_gains.d.q" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="dgain q" param="STABILIZATION_RATE_NDI_Q_DGAIN"/>
+      <dl_setting var="rate_ndi_gains.ff.q" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain q" param="STABILIZATION_RATE_NDI_Q_FFGAIN"/>	
       
-      <dl_setting var="rate_ndi_gains.p.r" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="pgain r" param="STABILIZATION_RATE_NDI_R_PGAIN"/>
-      <dl_setting var="rate_ndi_gains.i.r" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="igain r" param="STABILIZATION_RATE_NDI_R_IGAIN"/>
-      <dl_setting var="rate_ndi_gains.d.r" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="dgain r" param="STABILIZATION_RATE_NDI_R_DGAIN"/>
-      <dl_setting var="rate_ndi_gains.ff.r" min="1" step="1" max="8000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain r" param="STABILIZATION_RATE_NDI_R_FFGAIN"/>	    
+      <dl_setting var="rate_ndi_gains.p.r" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="pgain r" param="STABILIZATION_RATE_NDI_R_PGAIN"/>
+      <dl_setting var="rate_ndi_gains.i.r" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="igain r" param="STABILIZATION_RATE_NDI_R_IGAIN"/>
+      <dl_setting var="rate_ndi_gains.d.r" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="dgain r" param="STABILIZATION_RATE_NDI_R_DGAIN"/>
+      <dl_setting var="rate_ndi_gains.ff.r" min="1" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain r" param="STABILIZATION_RATE_NDI_R_FFGAIN"/>	    
 	</dl_settings>
 	
 	<dl_settings NAME="Altitude Loop">

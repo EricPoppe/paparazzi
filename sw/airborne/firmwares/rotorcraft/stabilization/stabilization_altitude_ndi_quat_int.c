@@ -37,6 +37,10 @@
 
 /*DEBUG REMOVE*/
 float alt_test;
+//float z_sp;
+//float z_d_sp;
+//bool_t alt_sp;
+//bool_t alt_d_sp;
 
 /* Controller gains */
 struct Int32NDIAltitudeGains small_inner_gains = {
@@ -293,6 +297,7 @@ static void altitude_calc_mass(void){
 	int32_t tcom_over_t;
 	tcom_over_t = 1120;
 	mass = (tcom_over_t*inv_m/4) >> (GV_ADAPT_X_FRAC - INT32_STAB_ALT_MASS_FRAC);
+//	mass = BFP_OF_REAL(0.4, INT32_STAB_ALT_MASS_FRAC);
 
 }
 
@@ -305,7 +310,7 @@ static void altitude_run_small_outer(bool_t enable_integrator){
 	int64_t small_outer_z_err; // INT64_STAB_ALT_ZD_FRAC
 	small_outer_z_err = (small_outer_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - ((int64_t)(stateGetPositionNed_i()->z) << (INT64_STAB_ALT_ZD_FRAC - INT32_POS_FRAC));
 
-	if (enable_integrator)
+	if (enable_integrator && (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) < QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH))
 		small_z_sum_err += small_outer_z_err >> (F_UPDATE_RES);
 	else
 		small_z_sum_err = 0;
@@ -325,7 +330,7 @@ static void altitude_run_large_outer(bool_t enable_integrator){
 	int64_t large_outer_z_err; // with INT64_STAB_ALT_ZD_FRAC
 	large_outer_z_err = (large_outer_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - ((int64_t)(stateGetPositionNed_i()->z) << (INT64_STAB_ALT_ZD_FRAC - INT32_POS_FRAC));
 
-	if (enable_integrator)
+	if (enable_integrator && (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) > QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW))
 		large_z_sum_err += large_outer_z_err >> (F_UPDATE_RES);
 	else
 		large_z_sum_err = 0;
@@ -347,7 +352,7 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 	int64_t small_inner_zd_err; // with INT64_STAB_ALT_ZDD_FRAC
 	small_inner_zd_err = (small_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC)) - (((int64_t)stateGetSpeedNed_i()->z) >> (INT32_SPEED_FRAC - INT64_STAB_ALT_ZDD_FRAC));
 
-	if (enable_integrator)
+	if (enable_integrator && (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) < QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH))
 		small_zd_sum_err += small_inner_zd_err >> (F_UPDATE_RES);
 	else
 		small_zd_sum_err = 0;
@@ -415,7 +420,7 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	  large_tavg_f = FLOAT_OF_BFP(large_tavg,INT32_STAB_ALT_T_FRAC);
 	}
 	else {
-		large_tavg_f = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC) *9.80665/(cosf(large_alpha_ref_f)*4);
+		large_tavg_f = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC)*9.80665/(cosf(large_alpha_ref_f)*4)*1.5;
 		large_tavg = BFP_OF_REAL(large_tavg_f,INT32_STAB_ALT_T_FRAC);
 	}
 
@@ -431,7 +436,7 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	int64_t large_inner_zd_err; // with INT64_STAB_ALT_ZDD_FRAC
 	large_inner_zd_err = (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC)) - (((int64_t)(stateGetSpeedNed_i()->z) >> (INT32_SPEED_FRAC - INT64_STAB_ALT_ZDD_FRAC)));
 
-	if (enable_integrator)
+	if (enable_integrator && (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) > QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW))
 		large_zd_sum_err += large_inner_zd_err >> (F_UPDATE_RES);
 	else
 		large_zd_sum_err = 0;
@@ -452,32 +457,48 @@ static void altitude_run_large_inner(bool_t enable_integrator){
   int64_t g_m_zdd_large; // with INT64_STAB_ALT_ZDD_FRAC
   g_m_zdd_large = BFP_OF_REAL(9.80665,INT64_STAB_ALT_ZDD_FRAC) - large_zdd_sp;
 
-	/* calculate large angle controller desired tilt angle based on thrust and zdd sp TODO: INT ACOS */
+	/* calculate large angle controller desired tilt angle based on previous average thrust and zdd sp TODO: INT ACOS */
   float large_alpha_f;
   float g_m_zdd_large_f;
   float mass_f;
-  float tavg_total_f;
+  float large_t_total_f;
   g_m_zdd_large_f = FLOAT_OF_BFP(g_m_zdd_large,INT64_STAB_ALT_ZDD_FRAC);
-  mass_f = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC);
-  tavg_total_f = ABS(large_tavg_f*4);
 
-  if (tavg_total_f == 0)
+  mass_f = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC);
+  large_t_total_f = FLOAT_OF_BFP(large_tavg*4, INT32_STAB_ALT_T_FRAC);
+
+  /*Prevent acosf arguments outside range -1 to 1 and division by zero*/
+  if (large_t_total_f == 0)
   	large_alpha_f = 0;
-  else if (g_m_zdd_large_f*mass_f < -tavg_total_f)
+  else if (g_m_zdd_large_f*mass_f < -large_t_total_f)
   	large_alpha_f = 3.14;
-  else if (g_m_zdd_large_f*mass_f > tavg_total_f)
+  else if (g_m_zdd_large_f*mass_f > large_t_total_f)
   	large_alpha_f = 0;
   else
-  	large_alpha_f = acosf(g_m_zdd_large_f*mass_f/(large_tavg_f*4));
+  	large_alpha_f = acosf(g_m_zdd_large_f*mass_f/(large_t_total_f));
+
+  /*Limit alpha between -80 and 80 deg */
+  if (large_alpha_f > 80./180.*3.14){
+  	large_alpha_f = 80./180.*3.14;
+  }
+  else if (large_alpha_f < -80./180.*3.14){
+  	large_alpha_f = -80./180.*3.14;
+  }
 
   large_alpha = ANGLE_BFP_OF_REAL(large_alpha_f);
+
+  /*DEBUG REMOVE*/
+	alt_test = g_m_zdd_large_f*mass_f/large_t_total_f;//-(tavg_total_f*cosf(large_alpha_f) - mass_f*9.80665)/mass_f;
 
 }
 
 
 void stabilization_altitude_run(bool_t enable_integrator) {
 
-
+	/*DEBUG REMOVE*/
+	if (alt_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+		altitude_z_sp = ((-z_sp)*((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
+	}
 	/* run altitude reference models */
 	stabilization_altitude_update_ref(&altitude_z_sp, &small_outer_ref_model, &small_outer_ref_model_state);
 	stabilization_altitude_update_ref(&altitude_z_sp, &large_outer_ref_model, &large_outer_ref_model_state);
@@ -486,17 +507,24 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 	 * if in VERTICAL_MODE_CLIMB don't use outer loop
 	 */
 
-	if (altitude_vert_mode != 1) {
+	if (altitude_vert_mode == 1 || (alt_d_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on)){
 
+		small_zd_sp = altitude_zd_sp >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC);
+		large_zd_sp = altitude_zd_sp >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC);
+
+	}
+	else {
 		/* run outer loop of small angle controller, calculates vertical velocity set point small_zd_sp */
 		altitude_run_small_outer(enable_integrator);
 
 		/* run outer loop of large angle controller, calculates vertical velocity set point large_zd_sp*/
 		altitude_run_large_outer(enable_integrator);
 	}
-	else {
-		small_zd_sp = altitude_zd_sp >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC);
-		large_zd_sp = altitude_zd_sp >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC);
+
+	/*DEBUG REMOVE*/
+	if (alt_d_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+		small_zd_sp = ((-z_d_sp)*((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
+		large_zd_sp = ((-z_d_sp)*((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
 	}
 
 	/* run vertical velocity reference models */
@@ -523,6 +551,9 @@ void stabilization_altitude_run(bool_t enable_integrator) {
    */
   int32_t alpha_des; //with INT32_ANGLE_FRAC
 
+//  /*DEBUG REMOVE*/
+//  alt_test = ((float)(large_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
+
 	if (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) < QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW) {
 		alpha_des = small_alpha;
 	  altitude_t_avg = small_tavg;
@@ -530,6 +561,7 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 	else if (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) > QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH) {
 		alpha_des = large_alpha;
 		altitude_t_avg = large_tavg;
+
 	}
 	else {
 		alpha_des = 1/(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*

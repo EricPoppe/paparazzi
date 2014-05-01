@@ -53,8 +53,11 @@
 #define AP_MODE_RC_DIRECT         14	// Safety Pilot Direct Commands for helicopter direct control
 #define AP_MODE_CARE_FREE_DIRECT  15
 #define AP_MODE_FORWARD           16
-#define AP_MODE_NAV_NDI			  18	// also use stabilization_ndi!!
-#define AP_MODE_ATTITUDE_Z_HOLD_NDI 19 // also use stabilization_ndi!!
+#define AP_MODE_NAV_NDI			      17	// also use stabilization_ndi!!
+#define AP_MODE_ATTITUDE_Z_HOLD_NDI 18 // also use stabilization_ndi!!
+
+/*REMOVE DEBUG*/
+#define AP_MODE_TUNE_NDI					19
 
 extern uint8_t autopilot_mode;
 extern uint8_t autopilot_mode_auto2;
