@@ -58,10 +58,6 @@
 #define GUIDANCE_H_MODE_CARE_FREE   6
 #define GUIDANCE_H_MODE_FORWARD     7
 
-///*DEBUG REMOVE*/
-//#define GUIDANCE_H_MODE_TUNE_NDI    8
-
-
 extern uint8_t guidance_h_mode;
 extern bool_t guidance_h_use_ref;
 extern bool_t guidance_h_approx_force_by_thrust;

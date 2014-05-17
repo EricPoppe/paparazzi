@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE telemetry SYSTEM "telemetry.dtd">
+<telemetry>
+
+
+  <process name="Main">
+
+    <mode name="default" key_press="d">
+      <message name="DL_VALUE"               period="1.1"/>
+      <message name="ROTORCRAFT_STATUS"      period="1.2"/>
+      <message name="ALIVE"                  period="2.1"/>
+      <message name="INS_REF"                period="5.1"/>
+      <!-- control loop test messages REMOVE -->
+      <message name="CONTROL_TEST" 			 period=".002"/>
+    </mode>
+
+  </process>
+
+</telemetry>
+

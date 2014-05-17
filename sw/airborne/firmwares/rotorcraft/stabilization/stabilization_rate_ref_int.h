@@ -31,7 +31,9 @@
 #define STABILIZATION_RATE_INT_REF_H
 
 #include "stabilization_rate_ref_int.h"
+#include "stabilization_rate_ndi_int.h"
 #include "math/pprz_algebra_int.h"
+#include "stabilization_attitude_ndi_pch_model.h"
 
 #define RATE_REF_JERK_FRAC 18
 #define RATE_REF_ACCEL_FRAC 27

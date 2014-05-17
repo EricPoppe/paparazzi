@@ -4,6 +4,7 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2_raw">
+      <!--define name="USE_SONAR"-->
       <define name="AUTOPILOT_DISABLE_AHRS_KILL"/>
       <subsystem name="telemetry" type="udp"/>
       <subsystem name="radio_control" type="datalink"/>
@@ -180,32 +181,32 @@
   
   <section name="STABILIZATION_ALTITUDE_NDI" prefix="STABILIZATION_ALTITUDE_NDI_">
     <!-- reference -->
-    <define name="SMALL_ZD_REF_OMEGA" value="20"/>
+    <define name="SMALL_ZD_REF_OMEGA" value="15"/>
     <define name="SMALL_ZD_REF_ZETA" value="1"/>
     <define name="LARGE_ZD_REF_OMEGA" value="5"/>
     <define name="LARGE_ZD_REF_ZETA" value="1"/>
     
-    <define name="SMALL_Z_REF_OMEGA" value="3"/>
-    <define name="SMALL_Z_REF_ZETA" value="1"/>
+    <define name="SMALL_Z_REF_OMEGA" value="10"/>
+    <define name="SMALL_Z_REF_ZETA" value="2"/>
     <define name="LARGE_Z_REF_OMEGA" value="2"/>
-    <define name="LARGE_Z_REF_ZETA" value="1"/>
+    <define name="LARGE_Z_REF_ZETA" value="2"/>
         
     <!-- feedback ALT_GAINS_FRAC = 7 -->
-    <define name="SMALL_INNER_PGAIN" value="1000"/>
-    <define name="SMALL_INNER_IGAIN" value="1000"/>
-    <define name="SMALL_INNER_DGAIN" value="1"/>
+    <define name="SMALL_INNER_PGAIN" value="300"/>
+    <define name="SMALL_INNER_IGAIN" value="200"/>
+    <define name="SMALL_INNER_DGAIN" value="0"/>
 
-    <define name="SMALL_OUTER_PGAIN" value="1000"/>
-    <define name="SMALL_OUTER_IGAIN" value="1"/>
-    <define name="SMALL_OUTER_DGAIN" value="1"/>
+    <define name="SMALL_OUTER_PGAIN" value="158"/>
+    <define name="SMALL_OUTER_IGAIN" value="0"/>
+    <define name="SMALL_OUTER_DGAIN" value="0"/>
     
-    <define name="LARGE_INNER_PGAIN" value="222"/>
-    <define name="LARGE_INNER_IGAIN" value="222"/>
-    <define name="LARGE_INNER_DGAIN" value="1"/>
+    <define name="LARGE_INNER_PGAIN" value="251"/>
+    <define name="LARGE_INNER_IGAIN" value="0"/>
+    <define name="LARGE_INNER_DGAIN" value="0"/>
     
     <define name="LARGE_OUTER_PGAIN" value="256"/>
-    <define name="LARGE_OUTER_IGAIN" value="1"/>
-    <define name="LARGE_OUTER_DGAIN" value="1"/>
+    <define name="LARGE_OUTER_IGAIN" value="0"/>
+    <define name="LARGE_OUTER_DGAIN" value="0"/>
      
     <!-- feedforward -->
     <define name="SMALL_INNER_FFGAIN" value="1"/>
@@ -216,37 +217,37 @@
 
   <section name="STABILIZATION_ATTITUDE_NDI" prefix="STABILIZATION_ATTITUDE_NDI_">
     <!-- feedback ATT_GAINS_FRAC = 7!! -->
-    <define name="TILT_PGAIN" value="128"/>
-    <define name="TILT_DGAIN" value="1"/>
+    <define name="TILT_PGAIN" value="2015"/>
+    <define name="TILT_DGAIN" value="21"/>
 
-    <define name="YAW_PGAIN" value="155"/>
-    <define name="YAW_DGAIN" value="1"/> 
+    <define name="YAW_PGAIN" value="70"/>
+    <define name="YAW_DGAIN" value="0"/> 
     
     <!-- DEBUG REMOVE -->
     <define name="OVERRIDE_ON" value="1"/> 
-    <define name="ATT_SP" value="1"/>
-    <define name="ATT_D_SP" value="0"/>
+    <define name="ATT_SP" value="0"/>
+    <define name="ATT_D_SP" value="1"/>
     <define name="ALT_SP" value="0"/>
-    <define name="ALT_D_SP" value="1"/>
+    <define name="ALT_D_SP" value="0"/>
     <define name="PHI_SP" value="0."/>
-    <define name="THETA_SP" value="0.744"/>
-    <define name="PSI_SP" value="0.038461"/>
+    <define name="THETA_SP" value="0.315"/>
+    <define name="PSI_SP" value="0."/>
     <define name="PHI_D_SP" value="0."/>
-    <define name="THETA_D_SP" value="0"/>
+    <define name="THETA_D_SP" value="1.029"/>
     <define name="PSI_D_SP" value="0."/>
-    <define name="Z_SP" value="0"/>
-    <define name="Z_D_SP" value="0.037"/>
+    <define name="Z_SP" value="2.078"/>
+    <define name="Z_D_SP" value="0.808"/>
   </section>
   
   <section name="STABILIZATION_RATE_NDI" prefix="STABILIZATION_RATE_NDI_">
   	<!-- reference -->
-    <define name="REF_OMEGA_P" value="30."/>
-    <define name="REF_ZETA_P" value="1."/>
+    <define name="REF_OMEGA_P" value="200."/>
+    <define name="REF_ZETA_P" value="2.58"/>
     <define name="REF_MAX_P" value="10."/>
     <define name="REF_MAX_PDOT" value="RadOfDeg(8000.)"/>
 
-    <define name="REF_OMEGA_Q" value="30."/>
-    <define name="REF_ZETA_Q" value="1."/>
+    <define name="REF_OMEGA_Q" value="200."/>
+    <define name="REF_ZETA_Q" value="2.58"/>
     <define name="REF_MAX_Q" value="10."/>
     <define name="REF_MAX_QDOT" value="RadOfDeg(8000.)"/>
 
@@ -256,17 +257,17 @@
     <define name="REF_MAX_RDOT" value="RadOfDeg(4000.)"/>
     
     <!-- feedback RATE_GAINS_FRAC = 7 -->
-    <define name="P_PGAIN" value="30239"/>
-    <define name="P_DGAIN" value="1"/>
-    <define name="P_IGAIN" value="1"/>
+    <define name="P_PGAIN" value="10000"/>
+    <define name="P_DGAIN" value="0"/>
+    <define name="P_IGAIN" value="15000"/>
 
-    <define name="Q_PGAIN" value="30239"/>
-    <define name="Q_DGAIN" value="1"/>
-    <define name="Q_IGAIN" value="1"/>
+    <define name="Q_PGAIN" value="10000"/>
+    <define name="Q_DGAIN" value="0"/>
+    <define name="Q_IGAIN" value="15000"/>
 
-    <define name="R_PGAIN" value="2299"/>
-    <define name="R_DGAIN" value="1"/>
-    <define name="R_IGAIN" value="1"/>
+    <define name="R_PGAIN" value="51"/>
+    <define name="R_DGAIN" value="0"/>
+    <define name="R_IGAIN" value="0"/>
 
     <!-- feedforward -->
     <define name="P_FFGAIN" value="1"/>
@@ -292,11 +293,16 @@
     <define name="MIN_ERR_ZD" value="SPEED_BFP_OF_REAL(-10.)"/>
     <define name="MAX_ERR_ZD" value="SPEED_BFP_OF_REAL( 10.)"/>
     <define name="MAX_SUM_ERR" value="2000000"/>
-    <define name="HOVER_KP" value="283"/>
-    <define name="HOVER_KD" value="82"/>
-    <define name="HOVER_KI" value="13"/>
+    <define name="HOVER_KP" value="42"/>
+    <define name="HOVER_KD" value="42"/>
+    <define name="HOVER_KI" value="42"/>
     <define name="NOMINAL_HOVER_THROTTLE" value="0.655"/>
     <define name="ADAPT_THROTTLE_ENABLED" value="TRUE"/>
+    <define name="GUIDANCE_V_ADAPT_INITIAL_HOVER_THROTTLE" value="0.655"/>
+  </section>  
+  
+  <section name="GUIDANCE_V_ADAPT" prefix="GUIDANCE_V_ADAPT_">
+    <define name="INITIAL_HOVER_THROTTLE" value="0.655"/>
   </section>  
 
   <section name="GUIDANCE_H" prefix="GUIDANCE_H_">
@@ -306,21 +312,21 @@
     <!-- define name="MAX_BANK" value="32" unit="deg"/ -->
     <define name="PGAIN" value="79"/>
     <define name="DGAIN" value="100"/>
-    <define name="IGAIN" value="60"/>
+    <define name="IGAIN" value="42"/>
   </section>
 
   <section name="SIMULATOR" prefix="NPS_">
     <define name="ACTUATOR_NAMES" value="{&quot;nw_motor&quot;, &quot;ne_motor&quot;, &quot;se_motor&quot;, &quot;sw_motor&quot;}"/>
     <define name="JSBSIM_MODEL" value="&quot;simple_ardrone2&quot;"/>
     <define name="JSBSIM_INIT" value="&quot;reset00&quot;"/>
-    <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_default.h&quot;"/>
+    <define name="SENSORS_PARAMS" value="&quot;nps_sensors_params_ardrone2.h&quot;"/>
   </section>
 
   <section name="AUTOPILOT">
     <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
     <define name="MODE_AUTO1" value="AP_MODE_TUNE_NDI"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV_NDI"/>
+    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
   </section>
     
   <section name="BAT">

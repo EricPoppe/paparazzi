@@ -31,6 +31,7 @@
 #include "state.h"
 #include "generated/airframe.h"
 #include "state.h"
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
 
 #include "std.h"
 #include <stdlib.h>
@@ -242,15 +243,16 @@ void stabilization_altitude_init(void) {
 // which is equal to >> 9
 #define F_UPDATE_RES 9
 
-static void stabilization_altitude_update_ref(int64_t *x_sp, struct Int32AltRefModel *ref_model, struct IntAltRefModelState *ref_model_state) {
+static void stabilization_altitude_update_ref(int64_t *x_sp, struct Int32AltRefModel *ref_model, struct IntAltRefModelState *ref_model_state, int64_t *v_h) {
 
 	/* integrate xd and xdd */
 	int64_t delta_xd;
-	delta_xd = ref_model_state->stab_alt_xdd_ref >> (F_UPDATE_RES + INT64_STAB_ALT_XDD_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC);
+	delta_xd = (ref_model_state->stab_alt_xdd_ref) >> (F_UPDATE_RES + INT64_STAB_ALT_XDD_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC);
 	ref_model_state->stab_alt_xd_ref += delta_xd;
 
+	/*TODO substract v_h from PCH*/
 	int64_t delta_x;
-	delta_x = ref_model_state->stab_alt_xd_ref >> (F_UPDATE_RES + INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_X_REF_FRAC);
+	delta_x = (ref_model_state->stab_alt_xd_ref) >> (F_UPDATE_RES + INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_X_REF_FRAC);
 	ref_model_state->stab_alt_x_ref += delta_x;
 
 	// compute xdd = -2*zeta*omega*xd -omega^2(x_sp - x)
@@ -263,11 +265,18 @@ static void stabilization_altitude_update_ref(int64_t *x_sp, struct Int32AltRefM
 
 }
 
-/* generic feedforward function */
-static void altitude_run_ff(int64_t *inner_zdd_ff, struct IntAltRefModelState *inner_ref_model_state, struct Int32NDIAltitudeGains *gains)
+/* feedforward function */
+static void altitude_run_inner_ff(int64_t *inner_zdd_ff, struct IntAltRefModelState *inner_ref_model_state, struct Int32NDIAltitudeGains *gains)
 {
 	/* Compute feedforward based on reference acceleration */
 	*inner_zdd_ff = (((int64_t)gains->ff)*inner_ref_model_state->stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC- INT64_STAB_ALT_ZDD_FRAC));
+
+}
+
+static void altitude_run_outer_ff(int64_t *outer_zd_ff, struct IntAltRefModelState *outer_ref_model_state, struct Int32NDIAltitudeGains *gains)
+{
+	/* Compute feedforward based on reference acceleration */
+	*outer_zd_ff = (((int64_t)gains->ff)*outer_ref_model_state->stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC- INT64_STAB_ALT_ZD_FRAC));
 
 }
 
@@ -293,11 +302,15 @@ static void altitude_calc_mass(void){
 		inv_m = BFP_OF_REAL(9.81 / (guidance_v_nominal_throttle * MAX_PPRZ), GV_ADAPT_X_FRAC);
 	}
 
-	/* TODO: mass_over_inv_m based on relation command and thrust */
-	int32_t tcom_over_t;
-	tcom_over_t = 1120;
-	mass = (tcom_over_t*inv_m/4) >> (GV_ADAPT_X_FRAC - INT32_STAB_ALT_MASS_FRAC);
-//	mass = BFP_OF_REAL(0.4, INT32_STAB_ALT_MASS_FRAC);
+	/*TODO: INT*/
+  int32_t thrust; // with INT32_STAB_ALT_T_FRAC
+  int16_t thrust_cmd = (int16_t)(9.81/FLOAT_OF_BFP(inv_m,GV_ADAPT_X_FRAC));
+  attitude_t_from_tcommand(&thrust,&thrust_cmd);
+
+  mass = ((int32_t)(thrust*4/9.80665)) << (INT32_STAB_ALT_MASS_FRAC - INT32_STAB_ALT_T_FRAC);
+
+//  /*DEBUG REMOVE altitude tuning fix mass*/
+//  mass = BFP_OF_REAL(0.43,INT32_STAB_ALT_MASS_FRAC);
 
 }
 
@@ -315,11 +328,23 @@ static void altitude_run_small_outer(bool_t enable_integrator){
 	else
 		small_z_sum_err = 0;
 
+	/*limit integrator terms (just in case, shouldn't be neccesary due to PCH)*/
+	if (small_z_sum_err > (((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC)))
+		small_z_sum_err = (((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC));
+	else if (small_z_sum_err < -(((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC)))
+		small_z_sum_err = -(((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC));
+
 	int64_t small_outer_zd_err; // with INT64_STAB_ALT_ZD_FRAC
 	small_outer_zd_err = ((small_outer_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (int64_t)((stateGetSpeedNed_i()->z) << (INT64_STAB_ALT_ZD_FRAC - INT32_SPEED_FRAC)));
 
-	/* run feedback loop */
-	altitude_run_fb(&small_outer_gains, &small_outer_z_err, &small_z_sum_err, &small_outer_zd_err, &small_zd_sp);
+	/* run ff and fb loop */
+	int64_t small_zd_fb;
+	altitude_run_fb(&small_outer_gains, &small_outer_z_err, &small_z_sum_err, &small_outer_zd_err, &small_zd_fb);
+
+	int64_t small_zd_ff;
+	altitude_run_outer_ff(&small_zd_ff,&small_outer_ref_model_state,&small_outer_gains);
+
+	small_zd_sp = small_zd_fb + small_zd_ff;
 
 }
 
@@ -335,11 +360,23 @@ static void altitude_run_large_outer(bool_t enable_integrator){
 	else
 		large_z_sum_err = 0;
 
+	/*limit integrator terms (just in case, shouldn't be neccesary due to PCH)*/
+	if (large_z_sum_err > (((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC)))
+		large_z_sum_err = (((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC));
+	else if (large_z_sum_err < -(((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC)))
+		large_z_sum_err = -(((int64_t)1) << (54 - INT64_STAB_ALT_ZD_FRAC));
+
 	int64_t large_outer_zd_err; // with INT64_STAB_ALT_ZD_FRAC
 	large_outer_zd_err = (large_outer_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (int64_t)((stateGetSpeedNed_i()->z) << (INT64_STAB_ALT_ZD_FRAC - INT32_SPEED_FRAC));
 
-	/* run feedback loop */
-	altitude_run_fb(&large_outer_gains, &large_outer_z_err, &large_z_sum_err, &large_outer_zd_err, &large_zd_sp);
+	/* run ff and fb loop */
+	int64_t large_zd_fb;
+	altitude_run_fb(&large_outer_gains, &large_outer_z_err, &large_z_sum_err, &large_outer_zd_err, &large_zd_fb);
+
+	int64_t large_zd_ff;
+	altitude_run_outer_ff(&large_zd_ff,&large_outer_ref_model_state,&large_outer_gains);
+
+	large_zd_sp = large_zd_fb + large_zd_ff;
 
 }
 
@@ -357,6 +394,12 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 	else
 		small_zd_sum_err = 0;
 
+	/*limit integrator terms (just in case, shouldn't be neccesary due to PCH)*/
+	if (small_zd_sum_err > (((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC)))
+		small_zd_sum_err = (((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC));
+	else if (small_zd_sum_err < -(((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC)))
+		small_zd_sum_err = -(((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC));
+
 	int64_t small_inner_zdd_err; // with INT64_STAB_ALT_ZDD_FRAC
 	small_inner_zdd_err = (((small_inner_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC))) - ((((int64_t)stateGetAccelNed_i()->z) << (INT64_STAB_ALT_ZDD_FRAC - INT32_ACCEL_FRAC))));
 
@@ -364,20 +407,20 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 	altitude_run_fb(&small_inner_gains, &small_inner_zd_err, &small_zd_sum_err, &small_inner_zdd_err, &small_zdd_fb);
 
 	/* run feedforward loop */
-  altitude_run_ff(&small_zdd_ff, &small_inner_ref_model_state, &small_inner_gains);
+  altitude_run_inner_ff(&small_zdd_ff, &small_inner_ref_model_state, &small_inner_gains);
 
   /* sum fb and ff */
   small_zdd_sp = small_zdd_fb + small_zdd_ff;
 
-	int64_t g_m_zdd_small; // with INT64_STAB_ALT_ZDD_FRAC
-	g_m_zdd_small = BFP_OF_REAL(9.80665, INT64_STAB_ALT_ZDD_FRAC) - (small_zdd_sp);
+  int64_t g_m_zdd_small; // with INT64_STAB_ALT_ZDD_FRAC
+  g_m_zdd_small = BFP_OF_REAL(9.80665, INT64_STAB_ALT_ZDD_FRAC) - (small_zdd_sp);
 
-	/*TODO: base on commanded thrust tilt angle??, DIVISION IN INT */
-	int64_t Ktilt; // tilt correction for vertical thrust based on state, with INT64_STAB_ALT_ZDD_FRAC
-	Ktilt = ((((int64_t)1)*(1<<(2*15)))/
-			((int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qi,stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC) -
-					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qx,stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC) -
-					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qy,stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC) +
+  /*TODO: base on commanded thrust tilt angle??, DIVISION IN INT */
+  int64_t Ktilt; // tilt correction for vertical thrust based on state, with INT64_STAB_ALT_ZDD_FRAC
+  Ktilt = ((((int64_t)1)*(1<<(2*15)))/
+  		((int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qi,stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC) -
+  				(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qx,stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC) -
+  				(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qy,stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC) +
 					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qz,stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC)))
 					<< (INT64_STAB_ALT_ZDD_FRAC - INT32_QUAT_FRAC);
 
@@ -436,10 +479,41 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	int64_t large_inner_zd_err; // with INT64_STAB_ALT_ZDD_FRAC
 	large_inner_zd_err = (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC)) - (((int64_t)(stateGetSpeedNed_i()->z) >> (INT32_SPEED_FRAC - INT64_STAB_ALT_ZDD_FRAC)));
 
+//	/* DEBUG REMOVE - test vertical velocity body frame vs earth frame  */
+//	float vertical_velocity_f;
+//
+//	int64_t q1q3_2mq0q2_2 = stateGetNedToBodyQuat_i()->qx*stateGetNedToBodyQuat_i()->qz
+//			- stateGetNedToBodyQuat_i()->qi*stateGetNedToBodyQuat_i()->qy;
+//
+//	int64_t q2q3_2pq0q1_2 = stateGetNedToBodyQuat_i()->qy*stateGetNedToBodyQuat_i()->qz
+//			+ stateGetNedToBodyQuat_i()->qi*stateGetNedToBodyQuat_i()->qx;
+//
+//	int64_t q0_2mq1_2mq2_2pq3_2 = stateGetNedToBodyQuat_i()->qi*stateGetNedToBodyQuat_i()->qi
+//			- stateGetNedToBodyQuat_i()->qx*stateGetNedToBodyQuat_i()->qx
+//			- stateGetNedToBodyQuat_i()->qy*stateGetNedToBodyQuat_i()->qy
+//			+ stateGetNedToBodyQuat_i()->qz*stateGetNedToBodyQuat_i()->qz;
+//
+//	vertical_velocity_f = FLOAT_OF_BFP((
+//			INT_MULT_RSHIFT(q1q3_2mq0q2_2,(int64_t)stateGetSpeedNed_i()->x,INT32_SPEED_FRAC)
+//			+ INT_MULT_RSHIFT(q2q3_2pq0q1_2,(int64_t)stateGetSpeedNed_i()->y,INT32_SPEED_FRAC)
+//			+ INT_MULT_RSHIFT(q0_2mq1_2mq2_2pq3_2,(int64_t)stateGetSpeedNed_i()->z,INT32_SPEED_FRAC)),
+//			2*INT32_QUAT_FRAC);
+//
+//	int64_t vertical_velocity_i = BFP_OF_REAL(vertical_velocity_f,INT32_SPEED_FRAC);
+//
+//	int64_t large_inner_zd_err; // with INT64_STAB_ALT_ZDD_FRAC
+//	large_inner_zd_err = (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC)) - ((vertical_velocity_i >> (INT32_SPEED_FRAC - INT64_STAB_ALT_ZDD_FRAC)));
+
 	if (enable_integrator && (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) > QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW))
 		large_zd_sum_err += large_inner_zd_err >> (F_UPDATE_RES);
 	else
 		large_zd_sum_err = 0;
+
+	/*limit integrator terms (just in case, shouldn't be neccesary due to PCH)*/
+	if (large_zd_sum_err > (((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC)))
+		large_zd_sum_err = (((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC));
+	else if (large_zd_sum_err < -(((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC)))
+		large_zd_sum_err = -(((int64_t)1) << (54 - INT64_STAB_ALT_ZDD_FRAC));
 
 	int64_t large_inner_zdd_err; // with INT64_STAB_ALT_ZDD_FRAC
 	large_inner_zdd_err = ((large_inner_ref_model_state.stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC))) - (((int64_t)(stateGetAccelNed_i()->z) << (INT64_STAB_ALT_ZDD_FRAC - INT32_ACCEL_FRAC)));
@@ -448,7 +522,7 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	altitude_run_fb(&large_inner_gains, &large_inner_zd_err, &large_zd_sum_err, &large_inner_zdd_err, &large_zdd_fb);
 
 	/* run feedforward loop */
-	altitude_run_ff(&large_zdd_ff, &large_inner_ref_model_state, &large_inner_gains);
+	altitude_run_inner_ff(&large_zdd_ff, &large_inner_ref_model_state, &large_inner_gains);
 
 	/* sum fb and ff */
 	large_zdd_sp = large_zdd_fb + large_zdd_ff;
@@ -487,9 +561,6 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 
   large_alpha = ANGLE_BFP_OF_REAL(large_alpha_f);
 
-  /*DEBUG REMOVE*/
-	alt_test = g_m_zdd_large_f*mass_f/large_t_total_f;//-(tavg_total_f*cosf(large_alpha_f) - mass_f*9.80665)/mass_f;
-
 }
 
 
@@ -499,9 +570,16 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 	if (alt_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
 		altitude_z_sp = ((-z_sp)*((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
 	}
+
+	/*find PCH correction v_h altitude*/
+	int64_t small_v_h_z; // INT64_STAB_ALT_XD_REF_FRAC
+	int64_t large_v_h_z; // INT64_STAB_ALT_XD_REF_FRAC
+	small_v_h_z = (small_zd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (small_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC));
+	large_v_h_z = (large_zd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC));
+
 	/* run altitude reference models */
-	stabilization_altitude_update_ref(&altitude_z_sp, &small_outer_ref_model, &small_outer_ref_model_state);
-	stabilization_altitude_update_ref(&altitude_z_sp, &large_outer_ref_model, &large_outer_ref_model_state);
+	stabilization_altitude_update_ref(&altitude_z_sp, &small_outer_ref_model, &small_outer_ref_model_state,&small_v_h_z);
+	stabilization_altitude_update_ref(&altitude_z_sp, &large_outer_ref_model, &large_outer_ref_model_state,&large_v_h_z);
 
 	/*
 	 * if in VERTICAL_MODE_CLIMB don't use outer loop
@@ -527,14 +605,20 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 		large_zd_sp = ((-z_d_sp)*((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
 	}
 
+	/*find PCH correction v_h vert. vel.*/
+	int64_t small_v_h_zd; // INT64_STAB_ALT_XD_REF_FRAC
+	int64_t large_v_h_zd; // INT64_STAB_ALT_XD_REF_FRAC
+	small_v_h_zd = (small_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_RATE_FRAC));
+	large_v_h_zd = (large_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_RATE_FRAC));
+
 	/* run vertical velocity reference models */
   int64_t small_zd_sp_ref_scale; //setpoint in reference model frac, with INT64_STAB_ALT_X_REF_FRAC
   int64_t large_zd_sp_ref_scale; //setpoint in reference model frac, with INT64_STAB_ALT_X_REF_FRAC
   small_zd_sp_ref_scale = small_zd_sp << (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC);
   large_zd_sp_ref_scale = large_zd_sp << (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZD_FRAC);
 
-	stabilization_altitude_update_ref(&small_zd_sp_ref_scale, &small_inner_ref_model, &small_inner_ref_model_state);
-	stabilization_altitude_update_ref(&large_zd_sp_ref_scale, &large_inner_ref_model, &large_inner_ref_model_state);
+	stabilization_altitude_update_ref(&small_zd_sp_ref_scale, &small_inner_ref_model, &small_inner_ref_model_state, &small_v_h_zd);
+	stabilization_altitude_update_ref(&large_zd_sp_ref_scale, &large_inner_ref_model, &large_inner_ref_model_state, &large_v_h_zd);
 
 	/* calculate mass */
 	altitude_calc_mass();
@@ -550,9 +634,6 @@ void stabilization_altitude_run(bool_t enable_integrator) {
    * a linear switch between QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW and QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH is used
    */
   int32_t alpha_des; //with INT32_ANGLE_FRAC
-
-//  /*DEBUG REMOVE*/
-//  alt_test = ((float)(large_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
 
 	if (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) < QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW) {
 		alpha_des = small_alpha;
@@ -574,6 +655,15 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 				1/(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
 				(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC))*small_tavg;
 	}
+
+	/*Limit thrust to joystick throttle*/
+	int16_t t_avg_cmd;
+	attitude_tcommand_from_t(&t_avg_cmd,&altitude_t_avg);
+#if NO_RC_THRUST_LIMIT
+#else
+	t_avg_cmd = Min(guidance_v_rc_delta_t, t_avg_cmd);
+	attitude_t_from_tcommand(&altitude_t_avg,&t_avg_cmd);
+#endif
 
   /*
    * Calculate desired attitude using desired tilt angle and stick tilt direction in quaternions TODO: INT

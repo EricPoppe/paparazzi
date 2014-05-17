@@ -73,7 +73,7 @@ extern void attitude_t_from_tcommand(int32_t *t, int16_t *tcom);
 extern int32_t getMaxT(void);
 extern void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des);
 
-extern int32_t attitude_t_avg;
+extern int32_t attitude_t_avg_cmd;
 
 /*DEBUG REMOVE*/
 extern bool_t stabilization_override_on;

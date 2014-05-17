@@ -204,7 +204,7 @@ void guidance_v_mode_changed(uint8_t new_mode) {
   switch (new_mode) {
   case GUIDANCE_V_MODE_HOVER:
   case GUIDANCE_V_MODE_HOVER_NDI:
-    guidance_v_z_sp = stateGetPositionNed_i()->z; // set current altitude as setpoint
+    guidance_v_z_sp = BFP_OF_REAL(-1,INT32_POS_FRAC); // <<DEBUG REMOVE stateGetPositionNed_i()->z; // set current altitude as setpoint
     guidance_v_z_sum_err = 0;
     GuidanceVSetRef(stateGetPositionNed_i()->z, 0, 0);
     break;
@@ -352,20 +352,6 @@ void guidance_v_run(bool_t in_flight) {
       }
       break;
     }
-
-//    /*DEBUG REMOVE*/
-//  case GUIDANCE_V_MODE_HOVER_NDI:
-//  	if (TUNE_NDI_SKIP_Z){
-//      altitude_z_sp = 0;
-//      altitude_zd_sp = ((int64_t)TUNE_NDI_ZD_ZP) << (INT64_STAB_ALT_X_REF_FRAC - INT32_SPEED_FRAC);
-//      altitude_vert_mode = VERTICAL_MODE_CLIMB;
-//  	}
-//  	else {
-//      altitude_z_sp = ((int64_t)TUNE_NDI_Z_SP) << (INT64_STAB_ALT_X_REF_FRAC - INT32_POS_FRAC);
-//      altitude_zd_sp = 0;
-//      altitude_vert_mode = VERTICAL_MODE_ALT;
-//  	}
-//      break;
 
     default:
     break;

@@ -95,7 +95,8 @@ void stabilization_attitude_read_rc_setpoint_eulers(struct Int32Eulers *sp, bool
 
   if (in_flight) {
     if (YAW_DEADBAND_EXCEEDED()) {
-      sp->psi += (int32_t) ((radio_control.values[RADIO_YAW] * max_rc_r) /  MAX_PPRZ / RC_UPDATE_FREQ);
+    	/*DEBUG REMOVE /10*/
+      sp->psi += (int32_t) ((radio_control.values[RADIO_YAW]/10 * max_rc_r) /  MAX_PPRZ / RC_UPDATE_FREQ);
       INT32_ANGLE_NORMALIZE(sp->psi);
     }
     if (coordinated_turn) {
@@ -161,7 +162,8 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
 
   if (in_flight) {
     if (YAW_DEADBAND_EXCEEDED()) {
-      sp->psi += (radio_control.values[RADIO_YAW] * STABILIZATION_ATTITUDE_SP_MAX_R / MAX_PPRZ / RC_UPDATE_FREQ);
+    	/*DEBUG REMOVE /10*/
+      sp->psi += (radio_control.values[RADIO_YAW]/10 * STABILIZATION_ATTITUDE_SP_MAX_R / MAX_PPRZ / RC_UPDATE_FREQ);
       FLOAT_ANGLE_NORMALIZE(sp->psi);
     }
     if (coordinated_turn) {
@@ -225,8 +227,9 @@ void stabilization_attitude_read_rc_setpoint_eulers_f(struct FloatEulers *sp, bo
 void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat* q) {
   /* orientation vector describing simultaneous rotation of roll/pitch */
   struct FloatVect3 ov;
-  ov.x = radio_control.values[RADIO_ROLL] * STABILIZATION_ATTITUDE_SP_MAX_PHI / MAX_PPRZ;
-  ov.y = radio_control.values[RADIO_PITCH] * STABILIZATION_ATTITUDE_SP_MAX_THETA / MAX_PPRZ;
+  /*DEBUG REMOVE /3*/
+  ov.x = radio_control.values[RADIO_ROLL]/3 * STABILIZATION_ATTITUDE_SP_MAX_PHI / MAX_PPRZ;
+  ov.y = radio_control.values[RADIO_PITCH]/3 * STABILIZATION_ATTITUDE_SP_MAX_THETA / MAX_PPRZ;
   ov.z = 0.0;
 
   /* quaternion from that orientation vector */

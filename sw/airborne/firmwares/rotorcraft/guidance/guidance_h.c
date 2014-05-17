@@ -371,14 +371,6 @@ void guidance_h_run(bool_t  in_flight) {
       }
       stabilization_attitude_run(in_flight);
       break;
-//      /*DEBUG REMOVE*/
-//    case GUIDANCE_H_MODE_TUNE_NDI:
-//    	guidance_h_cmd_earth.x = TUNE_NDI_PHI_SP << INT32_ANGLE_FRAC;
-//    	guidance_h_cmd_earth.y = TUNE_NDI_THETA_SP << INT32_ANGLE_FRAC;
-//    	guidance_h_heading_sp = TUNE_NDI_PSI_SP << INT32_ANGLE_FRAC;
-//    	stabilization_attitude_run(in_flight);
-//    	break;
-
     default:
       break;
   }

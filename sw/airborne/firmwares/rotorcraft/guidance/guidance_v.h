@@ -42,9 +42,6 @@
 #define GUIDANCE_V_MODE_NAV_NDI   6
 #define GUIDANCE_V_MODE_HOVER_NDI 7
 
-///*DEBUG REMOVE*/
-//#define GUIDANCE_V_MODE_TUNE_NDI  8
-
 extern uint8_t guidance_v_mode;
 
 /** altitude setpoint in meters (input).
@@ -86,6 +83,9 @@ extern int32_t guidance_v_fb_cmd;    ///< feed-back command
  *  valid range 0 : #MAX_PPRZ
  */
 extern int32_t guidance_v_delta_t;
+
+/*Make rc delta throttle available for NDI controller*/
+extern int32_t guidance_v_rc_delta_t;
 
 /** nominal throttle for hover.
  * This is only used if #GUIDANCE_V_NOMINAL_HOVER_THROTTLE is defined!

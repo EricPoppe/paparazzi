@@ -63,5 +63,8 @@ struct Int32ThrustDiff {
 };
 
 extern struct Int32ThrustDiff rate_thrust_diff;
+extern struct Int32VirtualInput virtual_input;
+
+#define VIRTUAL_INPUT_FRAC 12
 
 #endif /* STABILIZATION_RATE_NDI_QUAT_INT_H */

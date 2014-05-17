@@ -91,11 +91,16 @@ void stabilization_rate_ref_init(void) {
 
 void stabilization_rate_ref_update(void) {
 
-  /* integrate reference acceleration            */
+	struct Int64Rates v_h; // with RATE_REF_ACCEL_FRAC
+	v_h.p = (((int64_t)virtual_input.p) << (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC)) - (((int64_t)pch_ang_accel.p) << (RATE_REF_ACCEL_FRAC - INT32_RATE_FRAC));
+	v_h.q = (((int64_t)virtual_input.q) << (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC)) - (((int64_t)pch_ang_accel.q) << (RATE_REF_ACCEL_FRAC - INT32_RATE_FRAC));
+	v_h.r = (((int64_t)virtual_input.r) << (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC)) - (((int64_t)pch_ang_accel.r) << (RATE_REF_ACCEL_FRAC - INT32_RATE_FRAC));
+
+  /* integrate reference acceleration   PCH         */
   const struct Int64Rates delta_rate = {
-         stab_rate_ref_accel.p >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC),
-         stab_rate_ref_accel.q >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC),
-         stab_rate_ref_accel.r >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC)};
+         (stab_rate_ref_accel.p - v_h.p) >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC),
+         (stab_rate_ref_accel.q - v_h.q) >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC),
+         (stab_rate_ref_accel.r - v_h.r) >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC)};
   RATES_ADD(stab_rate_ref, delta_rate);
 
   /* integrate reference jerk            */
@@ -116,18 +121,36 @@ void stabilization_rate_ref_update(void) {
   stab_rate_sp_scaled.q = ((int64_t)stab_rate_sp.q) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
   stab_rate_sp_scaled.r = ((int64_t)stab_rate_sp.r) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
   RATES_DIFF(err, stab_rate_ref, stab_rate_sp_scaled);
+//
+//  /* propagate the 2nd order linear model*/
+//  const struct Int64Rates jerk_accel = {
+//    (((int64_t)(-2.*((int64_t)ZETA_OMEGA_P))) * (stab_rate_ref_accel.p >> (RATE_REF_ACCEL_FRAC - RATE_REF_JERK_FRAC))) >> (ZETA_OMEGA_P_RES),
+//    (((int64_t)(-2.*((int64_t)ZETA_OMEGA_Q))) * (stab_rate_ref_accel.q >> (RATE_REF_ACCEL_FRAC - RATE_REF_JERK_FRAC))) >> (ZETA_OMEGA_Q_RES),
+//    (((int64_t)(-2.*((int64_t)ZETA_OMEGA_R))) * (stab_rate_ref_accel.r >> (RATE_REF_ACCEL_FRAC - RATE_REF_JERK_FRAC))) >> (ZETA_OMEGA_R_RES) };
+//
+//  const struct Int64Rates jerk_rate = {
+//    (((int64_t)(-OMEGA_2_P)) * (err.p >> (RATE_REF_RATE_FRAC - RATE_REF_JERK_FRAC))) >> (OMEGA_2_P_RES),
+//    (((int64_t)(-OMEGA_2_Q)) * (err.q >> (RATE_REF_RATE_FRAC - RATE_REF_JERK_FRAC))) >> (OMEGA_2_Q_RES),
+//    (((int64_t)(-OMEGA_2_R)) * (err.r >> (RATE_REF_RATE_FRAC - RATE_REF_JERK_FRAC))) >> (OMEGA_2_R_RES) };
+//
+//   RATES_SUM(stab_rate_ref_jerk, jerk_accel, jerk_rate);
 
-  /* propagate the 2nd order linear model    */
-  const struct Int64Rates jerk_accel = {
-    ((int64_t)(-2.*ZETA_OMEGA_P) * (stab_rate_ref_accel.p >> (RATE_REF_ACCEL_FRAC - RATE_REF_JERK_FRAC))) >> (ZETA_OMEGA_P_RES),
-    ((int64_t)(-2.*ZETA_OMEGA_Q) * (stab_rate_ref_accel.q >> (RATE_REF_ACCEL_FRAC - RATE_REF_JERK_FRAC))) >> (ZETA_OMEGA_Q_RES),
-    ((int64_t)(-2.*ZETA_OMEGA_R) * (stab_rate_ref_accel.r >> (RATE_REF_ACCEL_FRAC - RATE_REF_JERK_FRAC))) >> (ZETA_OMEGA_R_RES) };
+   /* propagate the 2nd order linear model TODO: INT*/
+  const struct FloatRates jerk_accel_f = {
+    FLOAT_OF_BFP(-2.*ZETA_OMEGA_P,ZETA_OMEGA_P_RES) * FLOAT_OF_BFP(stab_rate_ref_accel.p,RATE_REF_ACCEL_FRAC),
+    FLOAT_OF_BFP(-2.*ZETA_OMEGA_Q,ZETA_OMEGA_Q_RES) * FLOAT_OF_BFP(stab_rate_ref_accel.q,RATE_REF_ACCEL_FRAC),
+    FLOAT_OF_BFP(-2.*ZETA_OMEGA_R,ZETA_OMEGA_R_RES) * FLOAT_OF_BFP(stab_rate_ref_accel.r,RATE_REF_ACCEL_FRAC)};
 
-  const struct Int64Rates jerk_rate = {
-    ((int64_t)(-OMEGA_2_P) * (err.p >> (RATE_REF_RATE_FRAC - RATE_REF_JERK_FRAC))) >> (OMEGA_2_P_RES),
-    ((int64_t)(-OMEGA_2_Q) * (err.q >> (RATE_REF_RATE_FRAC - RATE_REF_JERK_FRAC))) >> (OMEGA_2_Q_RES),
-    ((int64_t)(-OMEGA_2_R) * (err.r >> (RATE_REF_RATE_FRAC - RATE_REF_JERK_FRAC))) >> (OMEGA_2_R_RES) };
+  const struct FloatRates jerk_rate_f = {
+    FLOAT_OF_BFP(-OMEGA_2_P,OMEGA_2_P_RES) * ((float)(err.p)/((int64_t)1<<(36))),
+    FLOAT_OF_BFP(-OMEGA_2_Q,OMEGA_2_Q_RES) * ((float)(err.q)/((int64_t)1<<(36))),
+    FLOAT_OF_BFP(-OMEGA_2_R,OMEGA_2_R_RES) * ((float)(err.r)/((int64_t)1<<(36)))};
 
-  RATES_SUM(stab_rate_ref_jerk, jerk_accel, jerk_rate);
+  struct FloatRates stab_rate_ref_jerk_f;
+  RATES_SUM(stab_rate_ref_jerk_f, jerk_accel_f, jerk_rate_f);
+
+  stab_rate_ref_jerk.p = BFP_OF_REAL(stab_rate_ref_jerk_f.p,RATE_REF_JERK_FRAC);
+  stab_rate_ref_jerk.q = BFP_OF_REAL(stab_rate_ref_jerk_f.q,RATE_REF_JERK_FRAC);
+  stab_rate_ref_jerk.r = BFP_OF_REAL(stab_rate_ref_jerk_f.r,RATE_REF_JERK_FRAC);
 
 }

@@ -36,10 +36,13 @@
 
 /*REMOVE DEBUG*/
 float rate_test;
+float test = 0;
 
 struct Int32Rates prev_body_rate; ///< with INT32_RATE_FRAC
+struct Int64Rates body_accel; ///< with RATE_REF_ACCEL_FRAC
 
 #define RATE_GAINS_FRAC 7
+#define INT32_STAB_RATE_M_FRAC 20
 
 /* body parameters TODO: FIND REAL VALUES*/
 #ifndef STABILIZATION_NDI_IXX
@@ -88,13 +91,12 @@ struct Int32VirtualInput virtual_input_fb; // VIRTUAL_INPUT_FRAC
 struct Int32VirtualInput virtual_input; // VIRTUAL_INPUT_FRAC
 struct Int32Thrust rate_thrust; // INT32_STAB_ALT_T_FRAC
 
-#define VIRTUAL_INPUT_FRAC 12
 #define RATE_TIMESCALED_FRAC 21
 
 #define GAIN_PRESCALER_FF 1
 #define GAIN_PRESCALER_P 1
 #define GAIN_PRESCALER_I 1
-#define GAIN_PRESCALER_D 1
+#define GAIN_PRESCALER_D 0.1
 #define GAIN_PRESCALER_FF 1
 
 void stabilization_rate_ndi_init(void) {
@@ -106,6 +108,10 @@ void stabilization_rate_ndi_init(void) {
   rate_thrust_diff.roll = 0;
   rate_thrust_diff.pitch = 0;
   rate_thrust_diff.yaw = 0;
+
+	body_accel.p = 0;
+	body_accel.q = 0;
+	body_accel.r = 0;
 
 }
 
@@ -121,38 +127,69 @@ static void rate_ndi_run_ff(struct Int32VirtualInput *input, struct Int32NDIRate
 
 
 static void rate_ndi_run_fb(struct Int32VirtualInput *input, struct Int32NDIRateGains *gains, struct Int32Rates *rate_ndi_err,
-    struct Int32Rates *accel_err, struct Int32Rates *sum_err)
+    struct Int64Rates *accel_err, struct Int32Rates *sum_err)
 {
   /*  PID feedback */
   input->p =
-    GAIN_PRESCALER_P * INT_MULT_RSHIFT(gains->p.p, rate_ndi_err->p, RATE_GAINS_FRAC) +
-    GAIN_PRESCALER_D * INT_MULT_RSHIFT(gains->d.p, accel_err->p, RATE_GAINS_FRAC) +
-    GAIN_PRESCALER_I * INT_MULT_RSHIFT(gains->i.p , sum_err->p, RATE_GAINS_FRAC);
+    GAIN_PRESCALER_P * INT_MULT_RSHIFT(gains->p.p, rate_ndi_err->p, RATE_GAINS_FRAC + INT32_RATE_FRAC - VIRTUAL_INPUT_FRAC) +
+    (int32_t)(GAIN_PRESCALER_D * INT_MULT_RSHIFT(gains->d.p, accel_err->p, RATE_GAINS_FRAC + RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC)) +
+    GAIN_PRESCALER_I * (int32_t)INT_MULT_RSHIFT((int64_t)gains->i.p , (int64_t)sum_err->p, RATE_GAINS_FRAC + RATE_TIMESCALED_FRAC - VIRTUAL_INPUT_FRAC);
 
   input->q =
-      GAIN_PRESCALER_P * INT_MULT_RSHIFT(gains->p.q, rate_ndi_err->q, RATE_GAINS_FRAC) +
-      GAIN_PRESCALER_D * INT_MULT_RSHIFT(gains->d.q, accel_err->q, RATE_GAINS_FRAC) +
-      GAIN_PRESCALER_I * INT_MULT_RSHIFT(gains->i.q , sum_err->q, RATE_GAINS_FRAC);
+    GAIN_PRESCALER_P * INT_MULT_RSHIFT(gains->p.q, rate_ndi_err->q, RATE_GAINS_FRAC + INT32_RATE_FRAC - VIRTUAL_INPUT_FRAC) +
+    (int32_t)(GAIN_PRESCALER_D * INT_MULT_RSHIFT(gains->d.q, accel_err->q, RATE_GAINS_FRAC + RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC)) +
+    GAIN_PRESCALER_I * (int32_t)INT_MULT_RSHIFT((int64_t)gains->i.q , (int64_t)sum_err->q, RATE_GAINS_FRAC + RATE_TIMESCALED_FRAC - VIRTUAL_INPUT_FRAC);
 
   input->r =
-      GAIN_PRESCALER_P * INT_MULT_RSHIFT(gains->p.r, rate_ndi_err->r, RATE_GAINS_FRAC) +
-      GAIN_PRESCALER_D * INT_MULT_RSHIFT(gains->d.r, accel_err->r, RATE_GAINS_FRAC) +
-      GAIN_PRESCALER_I * INT_MULT_RSHIFT(gains->i.r , sum_err->r, RATE_GAINS_FRAC);
+    GAIN_PRESCALER_P * INT_MULT_RSHIFT(gains->p.r, rate_ndi_err->r, RATE_GAINS_FRAC + INT32_RATE_FRAC - VIRTUAL_INPUT_FRAC) +
+    (int32_t)(GAIN_PRESCALER_D * INT_MULT_RSHIFT(gains->d.r, accel_err->r, RATE_GAINS_FRAC + RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC)) +
+    GAIN_PRESCALER_I * (int32_t)INT_MULT_RSHIFT((int64_t)gains->i.r , (int64_t)sum_err->r, RATE_GAINS_FRAC + RATE_TIMESCALED_FRAC - VIRTUAL_INPUT_FRAC);
 
 }
 
 static void rate_ndi_run_accel_to_thrust(struct Int32ThrustDiff *thrust_diff, struct Int32VirtualInput *input)
 {
-	int32_t Mx; // desired moment around x-axis in INT32_STAB_ALT_T_FRAC
-	int32_t My; // desired moment around x-axis in INT32_STAB_ALT_T_FRAC
+	int32_t Mx; // desired moment around x-axis in INT32_STAB_RATE_M_FRAC
+	int32_t My; // desired moment around x-axis in INT32_STAB_RATE_M_FRAC
 	int32_t Mz; // desired moment around x-axis in INT32_STAB_ALT_T_FRAC
 
-	Mx = (int32_t)((input->p << (INT32_STAB_ALT_T_FRAC - VIRTUAL_INPUT_FRAC))*STABILIZATION_NDI_IXX);
-	My = (int32_t)((input->q << (INT32_STAB_ALT_T_FRAC - VIRTUAL_INPUT_FRAC))*STABILIZATION_NDI_IXX);
-	Mz = (int32_t)((input->r << (INT32_STAB_ALT_T_FRAC - VIRTUAL_INPUT_FRAC))*STABILIZATION_NDI_IXX);
+	/*
+	 * TODO: INT
+	 */
+	struct FloatMat33 I_mat;
+	FLOAT_MAT33_DIAG(I_mat, STABILIZATION_NDI_IXX, STABILIZATION_NDI_IYY, STABILIZATION_NDI_IZZ);
 
-	thrust_diff->roll = Mx/STABILIZATION_NDI_ARM;
-	thrust_diff->pitch = My/STABILIZATION_NDI_ARM;
+	struct FloatVect3 omega_body;
+	omega_body.x = stateGetBodyRates_f()->p;
+	omega_body.y = stateGetBodyRates_f()->q;
+	omega_body.z = stateGetBodyRates_f()->r;
+
+	struct FloatVect3 Iomega;
+	MAT33_VECT3_MUL(Iomega,I_mat,omega_body);
+
+	struct FloatVect3 omegaIomega;
+  VECT3_CROSS_PRODUCT(omegaIomega,omega_body,Iomega);
+
+	struct FloatVect3 omega_d_body;
+	omega_d_body.x = FLOAT_OF_BFP(input->p,VIRTUAL_INPUT_FRAC);
+	omega_d_body.y = FLOAT_OF_BFP(input->q,VIRTUAL_INPUT_FRAC);
+	omega_d_body.z = FLOAT_OF_BFP(input->r,VIRTUAL_INPUT_FRAC);
+
+	struct FloatVect3 Iomega_d;
+	MAT33_VECT3_MUL(Iomega_d,I_mat,omega_d_body);
+
+	struct FloatVect3 Iomega_d_omegaIomega;
+
+	Iomega_d_omegaIomega.x = Iomega_d.x + omegaIomega.x;
+	Iomega_d_omegaIomega.y = Iomega_d.y + omegaIomega.y;
+	Iomega_d_omegaIomega.z = Iomega_d.z + omegaIomega.z;
+
+	Mx = BFP_OF_REAL(Iomega_d_omegaIomega.x,INT32_STAB_RATE_M_FRAC);
+	My = BFP_OF_REAL(Iomega_d_omegaIomega.y,INT32_STAB_RATE_M_FRAC);
+	Mz = BFP_OF_REAL(Iomega_d_omegaIomega.z,INT32_STAB_ALT_T_FRAC);
+
+	thrust_diff->roll = BFP_OF_REAL(FLOAT_OF_BFP(Mx,INT32_STAB_RATE_M_FRAC)/STABILIZATION_NDI_ARM, INT32_STAB_ALT_T_FRAC);
+	thrust_diff->pitch = BFP_OF_REAL(FLOAT_OF_BFP(My,INT32_STAB_RATE_M_FRAC)/STABILIZATION_NDI_ARM, INT32_STAB_ALT_T_FRAC);
 	attitude_tdiff_from_tau_command(&thrust_diff->yaw, &Mz);
 
 }
@@ -166,7 +203,6 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   /*
    * Update reference
    */
-
   stabilization_rate_ref_update();
 
   /*
@@ -182,32 +218,25 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   stab_rate_ref_scaled.r = (int32_t)(stab_rate_ref.r >> (RATE_REF_RATE_FRAC - INT32_RATE_FRAC));
   RATES_DIFF(rate_ndi_err, stab_rate_ref_scaled, *body_rate);
 
-  struct Int32Rates rate_err_scaled; // with VIRTUAL_INPUT_FRAC
-  rate_err_scaled.p = (rate_ndi_err.p >> (INT32_RATE_FRAC - VIRTUAL_INPUT_FRAC));
-  rate_err_scaled.q = (rate_ndi_err.q >> (INT32_RATE_FRAC - VIRTUAL_INPUT_FRAC));
-  rate_err_scaled.r = (rate_ndi_err.r >> (INT32_RATE_FRAC - VIRTUAL_INPUT_FRAC));
-
   /* angular acceleration */
   struct Int64Rates accel_err; ///< with RATE_REF_ACCEL_FRAC
-  struct Int64Rates body_accel; ///< with RATE_REF_ACCEL_FRAC
   struct Int32Rates rate_diff; ///< with INT32_RATE_FRAC
-  RATES_DIFF(rate_diff, *body_rate, prev_body_rate);
-  RATES_COPY(prev_body_rate, *body_rate);
-  body_accel.p = ((int64_t)rate_diff.p) << (F_UPDATE_RES - INT32_RATE_FRAC + RATE_REF_ACCEL_FRAC);
-  body_accel.q = ((int64_t)rate_diff.q) << (F_UPDATE_RES - INT32_RATE_FRAC + RATE_REF_ACCEL_FRAC);
-  body_accel.r = ((int64_t)rate_diff.r) << (F_UPDATE_RES - INT32_RATE_FRAC + RATE_REF_ACCEL_FRAC);
+
+  if (body_rate->p != prev_body_rate.p) {
+  	/*IMU runs at 200 hz*/
+		RATES_DIFF(rate_diff, *body_rate, prev_body_rate);
+		RATES_COPY(prev_body_rate, *body_rate);
+		body_accel.p = (((int64_t)rate_diff.p) << (RATE_REF_ACCEL_FRAC - INT32_RATE_FRAC))*200;
+		body_accel.q = (((int64_t)rate_diff.q) << (RATE_REF_ACCEL_FRAC - INT32_RATE_FRAC))*200;
+		body_accel.r = (((int64_t)rate_diff.r) << (RATE_REF_ACCEL_FRAC - INT32_RATE_FRAC))*200;
+  }
 
   /* error derivative */
-  struct Int32Rates accel_err_scaled; // with VIRTUAL_INPUT_FRAC
   RATES_DIFF(accel_err, stab_rate_ref_accel, body_accel);
-  accel_err_scaled.p = (int32_t)(accel_err.p >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
-  accel_err_scaled.q = (int32_t)(accel_err.q >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
-  accel_err_scaled.r = (int32_t)(accel_err.r >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
 
   /* integrated error */
   struct Int32Rates timescaled_rate_err; ///< RATE_TIMESCALED_FRAC
   if (enable_integrator) {
-
     /* update accumulator */
     timescaled_rate_err.p = rate_ndi_err.p >> (F_UPDATE_RES + INT32_RATE_FRAC - RATE_TIMESCALED_FRAC);
     timescaled_rate_err.q = rate_ndi_err.q >> (F_UPDATE_RES + INT32_RATE_FRAC - RATE_TIMESCALED_FRAC);
@@ -220,10 +249,21 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
     stabilization_rate_ndi_sum_err.r = 0;
   }
 
-  struct Int32Rates sum_err_scaled; // with VIRTUAL_INPUT_FRAC
-  sum_err_scaled.p = (stabilization_rate_ndi_sum_err.p >> (RATE_TIMESCALED_FRAC - VIRTUAL_INPUT_FRAC));
-  sum_err_scaled.q = (stabilization_rate_ndi_sum_err.q >> (RATE_TIMESCALED_FRAC - VIRTUAL_INPUT_FRAC));
-  sum_err_scaled.r = (stabilization_rate_ndi_sum_err.r >> (RATE_TIMESCALED_FRAC - VIRTUAL_INPUT_FRAC));
+	/*limit integrator terms (just in case, shouldn't be neccesary due to PCH)*/
+	if (stabilization_rate_ndi_sum_err.p > (1 << (29)))
+		stabilization_rate_ndi_sum_err.p = (1 << (29));
+	else if (stabilization_rate_ndi_sum_err.p < -(1 << (29)))
+		stabilization_rate_ndi_sum_err.p = -(1 << (29));
+
+	if (stabilization_rate_ndi_sum_err.q > (1 << (29)))
+		stabilization_rate_ndi_sum_err.q = (1 << (29));
+	else if (stabilization_rate_ndi_sum_err.q < -(1 << (29)))
+		stabilization_rate_ndi_sum_err.q = -(1 << (29));
+
+	if (stabilization_rate_ndi_sum_err.r > (1 << (29)))
+		stabilization_rate_ndi_sum_err.r = (1 << (29));
+	else if (stabilization_rate_ndi_sum_err.r < -(1 << (29)))
+		stabilization_rate_ndi_sum_err.r = -(1 << (29));
 
   /* compute the feed forward command */
   struct Int32Rates stab_rate_ref_accel_scaled; // with VIRTUAL_INPUT_FRAC
@@ -233,12 +273,16 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   rate_ndi_run_ff(&virtual_input_ff, &rate_ndi_gains, &stab_rate_ref_accel_scaled);
 
   /* compute the feed back command */
-  rate_ndi_run_fb(&virtual_input_fb, &rate_ndi_gains, &rate_err_scaled, &accel_err_scaled, &sum_err_scaled);
+  rate_ndi_run_fb(&virtual_input_fb, &rate_ndi_gains, &rate_ndi_err, &accel_err, &stabilization_rate_ndi_sum_err);
 
   /* sum feedforward and feedback */
   virtual_input.p = virtual_input_fb.p + virtual_input_ff.p;
   virtual_input.q = virtual_input_fb.q + virtual_input_ff.q;
   virtual_input.r = virtual_input_fb.r + virtual_input_ff.r;
+
+
+//  /*DEBUG REMOVE*/
+//  rate_test = FLOAT_OF_BFP(virtual_input_ff.p,VIRTUAL_INPUT_FRAC);
 
   /* compute thrust from desired angular acceleration */
   rate_ndi_run_accel_to_thrust(&rate_thrust_diff, &virtual_input);
