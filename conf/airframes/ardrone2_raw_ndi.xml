@@ -68,10 +68,13 @@
     
   <section name="IMU" prefix="IMU_">
     <!-- Accelero -->
-    <define name="ACCEL_X_NEUTRAL" value="2048"/>
-    <define name="ACCEL_Y_NEUTRAL" value="2048"/>
-    <define name="ACCEL_Z_NEUTRAL" value="2048"/>
-
+	<define name="ACCEL_X_NEUTRAL" value="2032"/>
+	<define name="ACCEL_Y_NEUTRAL" value="2074"/>
+	<define name="ACCEL_Z_NEUTRAL" value="2072"/>
+	<define name="ACCEL_X_SENS" value="20.0703385955" integer="16"/>
+	<define name="ACCEL_Y_SENS" value="19.2849915392" integer="16"/>
+	<define name="ACCEL_Z_SENS" value="19.5104041668" integer="16"/>
+	
     <!-- Magneto calibration -->
     <define name="MAG_X_NEUTRAL" value="0"/>
     <define name="MAG_Y_NEUTRAL" value="0"/>
@@ -181,15 +184,15 @@
   
   <section name="STABILIZATION_ALTITUDE_NDI" prefix="STABILIZATION_ALTITUDE_NDI_">
     <!-- reference -->
-    <define name="SMALL_ZD_REF_OMEGA" value="15"/>
-    <define name="SMALL_ZD_REF_ZETA" value="1"/>
-    <define name="LARGE_ZD_REF_OMEGA" value="5"/>
-    <define name="LARGE_ZD_REF_ZETA" value="1"/>
+    <define name="SMALL_ZD_REF_OMEGA" value="15."/>
+    <define name="SMALL_ZD_REF_ZETA" value="1."/>
+    <define name="LARGE_ZD_REF_OMEGA" value="5."/>
+    <define name="LARGE_ZD_REF_ZETA" value="1."/>
     
-    <define name="SMALL_Z_REF_OMEGA" value="10"/>
-    <define name="SMALL_Z_REF_ZETA" value="2"/>
-    <define name="LARGE_Z_REF_OMEGA" value="2"/>
-    <define name="LARGE_Z_REF_ZETA" value="2"/>
+    <define name="SMALL_Z_REF_OMEGA" value="10."/>
+    <define name="SMALL_Z_REF_ZETA" value="2."/>
+    <define name="LARGE_Z_REF_OMEGA" value="2."/>
+    <define name="LARGE_Z_REF_ZETA" value="2."/>
         
     <!-- feedback ALT_GAINS_FRAC = 7 -->
     <define name="SMALL_INNER_PGAIN" value="300"/>
@@ -226,28 +229,28 @@
     <!-- DEBUG REMOVE -->
     <define name="OVERRIDE_ON" value="1"/> 
     <define name="ATT_SP" value="0"/>
-    <define name="ATT_D_SP" value="1"/>
+    <define name="ATT_D_SP" value="0"/>
     <define name="ALT_SP" value="0"/>
-    <define name="ALT_D_SP" value="0"/>
+    <define name="ALT_D_SP" value="1"/>
     <define name="PHI_SP" value="0."/>
     <define name="THETA_SP" value="0.315"/>
     <define name="PSI_SP" value="0."/>
     <define name="PHI_D_SP" value="0."/>
-    <define name="THETA_D_SP" value="1.029"/>
+    <define name="THETA_D_SP" value="0.208"/>
     <define name="PSI_D_SP" value="0."/>
     <define name="Z_SP" value="2.078"/>
-    <define name="Z_D_SP" value="0.808"/>
+    <define name="Z_D_SP" value="0.394"/>
   </section>
   
   <section name="STABILIZATION_RATE_NDI" prefix="STABILIZATION_RATE_NDI_">
   	<!-- reference -->
-    <define name="REF_OMEGA_P" value="200."/>
-    <define name="REF_ZETA_P" value="2.58"/>
+    <define name="REF_OMEGA_P" value="150."/>
+    <define name="REF_ZETA_P" value="3."/>
     <define name="REF_MAX_P" value="10."/>
     <define name="REF_MAX_PDOT" value="RadOfDeg(8000.)"/>
 
-    <define name="REF_OMEGA_Q" value="200."/>
-    <define name="REF_ZETA_Q" value="2.58"/>
+    <define name="REF_OMEGA_Q" value="150."/>
+    <define name="REF_ZETA_Q" value="3."/>
     <define name="REF_MAX_Q" value="10."/>
     <define name="REF_MAX_QDOT" value="RadOfDeg(8000.)"/>
 
@@ -326,7 +329,7 @@
     <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
     <define name="MODE_AUTO1" value="AP_MODE_TUNE_NDI"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_Z_HOLD_NDI"/>
   </section>
     
   <section name="BAT">

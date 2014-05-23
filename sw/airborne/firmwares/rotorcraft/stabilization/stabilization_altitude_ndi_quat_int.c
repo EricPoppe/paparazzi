@@ -86,59 +86,59 @@ struct Int32NDIAltitudeGains large_outer_gains = {
 #define STAB_ALT_Z_OMEGA_2_FRAC 7
 
 /* second order reference model natural frequency and damping (small angle inner reference model)*/
-#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA
-#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA RadOfDeg(100.)
-#endif
-#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA
-#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA  0.85
-#endif
-#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA*STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA), STAB_ALT_ZD_ZETA_OMEGA_FRAC)
-#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA), STAB_ALT_ZD_OMEGA_2_FRAC)
+//#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA RadOfDeg(100.)
+//#endif
+//#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA  0.85
+//#endif
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA*STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA), STAB_ALT_ZD_ZETA_OMEGA_FRAC)
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_ZD_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA), STAB_ALT_ZD_OMEGA_2_FRAC)
 
-struct Int32AltRefModel small_inner_ref_model = {
-		STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA, STABILIZATION_ALTITUDE_NDI_SMALL_ZD_ZETA_OMEGA, STABILIZATION_ALTITUDE_NDI_SMALL_ZD_OMEGA_2
+struct FloatAltRefModel small_inner_ref_model = {
+		STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA
 };
 
 /* second order reference model natural frequency and damping (small angle outer reference model)*/
-#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA
-#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA RadOfDeg(100.)
-#endif
-#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA
-#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA  0.85
-#endif
-#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA*STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA), STAB_ALT_Z_ZETA_OMEGA_FRAC)
-#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA), STAB_ALT_Z_OMEGA_2_FRAC)
+//#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA RadOfDeg(100.)
+//#endif
+//#ifndef STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA  0.85
+//#endif
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA*STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA), STAB_ALT_Z_ZETA_OMEGA_FRAC)
+//#define STABILIZATION_ALTITUDE_NDI_SMALL_Z_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA), STAB_ALT_Z_OMEGA_2_FRAC)
 
-struct Int32AltRefModel small_outer_ref_model = {
-		STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA, STABILIZATION_ALTITUDE_NDI_SMALL_Z_ZETA_OMEGA, STABILIZATION_ALTITUDE_NDI_SMALL_Z_OMEGA_2
+struct FloatAltRefModel small_outer_ref_model = {
+		STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA
 };
 
 /* second order reference model natural frequency and damping (large angle inner reference model)*/
-#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA
-#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA RadOfDeg(100.)
-#endif
-#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA
-#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA  0.85
-#endif
-#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA*STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA), STAB_ALT_ZD_ZETA_OMEGA_FRAC)
-#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA), STAB_ALT_ZD_OMEGA_2_FRAC)
+//#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA RadOfDeg(100.)
+//#endif
+//#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA  0.85
+//#endif
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA*STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA), STAB_ALT_ZD_ZETA_OMEGA_FRAC)
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_ZD_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA), STAB_ALT_ZD_OMEGA_2_FRAC)
 
-struct Int32AltRefModel large_inner_ref_model = {
-		STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA, STABILIZATION_ALTITUDE_NDI_LARGE_ZD_ZETA_OMEGA, STABILIZATION_ALTITUDE_NDI_LARGE_ZD_OMEGA_2
+struct FloatAltRefModel large_inner_ref_model = {
+		STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA
 };
 
 /* second order reference model natural frequency and damping (large angle outer reference model)*/
-#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA
-#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA RadOfDeg(100.)
-#endif
-#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA
-#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA  0.85
-#endif
-#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA*STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA), STAB_ALT_Z_ZETA_OMEGA_FRAC)
-#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA), STAB_ALT_Z_OMEGA_2_FRAC)
+//#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA RadOfDeg(100.)
+//#endif
+//#ifndef STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA  0.85
+//#endif
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_ZETA_OMEGA BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA*STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA), STAB_ALT_Z_ZETA_OMEGA_FRAC)
+//#define STABILIZATION_ALTITUDE_NDI_LARGE_Z_OMEGA_2    BFP_OF_REAL((STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA*STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA), STAB_ALT_Z_OMEGA_2_FRAC)
 
-struct Int32AltRefModel large_outer_ref_model = {
-		STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA, STABILIZATION_ALTITUDE_NDI_LARGE_Z_ZETA_OMEGA, STABILIZATION_ALTITUDE_NDI_LARGE_Z_OMEGA_2
+struct FloatAltRefModel large_outer_ref_model = {
+		STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA, STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA
 };
 
 /* adaptation */
@@ -214,18 +214,22 @@ void stabilization_altitude_init(void) {
 	/* reference models states equal to zero */
 	small_inner_ref_model_state.stab_alt_x_ref = 0;
 	small_inner_ref_model_state.stab_alt_xd_ref = 0;
+	small_inner_ref_model_state.stab_alt_ff_ref = 0;
 	small_inner_ref_model_state.stab_alt_xdd_ref = 0;
 
 	small_outer_ref_model_state.stab_alt_x_ref = 0;
 	small_outer_ref_model_state.stab_alt_xd_ref = 0;
+	small_outer_ref_model_state.stab_alt_ff_ref = 0;
 	small_outer_ref_model_state.stab_alt_xdd_ref = 0;
 
 	large_inner_ref_model_state.stab_alt_x_ref = 0;
 	large_inner_ref_model_state.stab_alt_xd_ref = 0;
+	large_inner_ref_model_state.stab_alt_ff_ref = 0;
 	large_inner_ref_model_state.stab_alt_xdd_ref = 0;
 
 	large_outer_ref_model_state.stab_alt_x_ref = 0;
 	large_outer_ref_model_state.stab_alt_xd_ref = 0;
+	large_outer_ref_model_state.stab_alt_ff_ref = 0;
 	large_outer_ref_model_state.stab_alt_xdd_ref = 0;
 
 	small_z_sum_err = 0;
@@ -243,25 +247,37 @@ void stabilization_altitude_init(void) {
 // which is equal to >> 9
 #define F_UPDATE_RES 9
 
-static void stabilization_altitude_update_ref(int64_t *x_sp, struct Int32AltRefModel *ref_model, struct IntAltRefModelState *ref_model_state, int64_t *v_h) {
+static void stabilization_altitude_update_ref(int64_t *x_sp, struct FloatAltRefModel *ref_model, struct IntAltRefModelState *ref_model_state, int64_t *v_h) {
+
+	int64_t zeta_omega;
+	zeta_omega = BFP_OF_REAL((ref_model->omega*ref_model->zeta), STAB_ALT_ZD_ZETA_OMEGA_FRAC);
+	int64_t omega_2;
+	omega_2 = BFP_OF_REAL((ref_model->omega*ref_model->omega), STAB_ALT_ZD_OMEGA_2_FRAC);
+
+	// compute xdd = -2*zeta*omega*xd -omega^2(x_sp - x)
+	int64_t xdd_vel;
+	xdd_vel = ((((int64_t)-2)*zeta_omega)*(ref_model_state->stab_alt_xd_ref>>(INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)))>>STAB_ALT_ZD_ZETA_OMEGA_FRAC;
+	// compute zd error in zd_sp resolution
+	int64_t x_err; // with INT64_STAB_ALT_ZD_REF_FRAC
+	x_err = *x_sp - ref_model_state->stab_alt_x_ref;
+	int64_t xdd_err;
+	xdd_err = ((omega_2)*(x_err >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)))>>STAB_ALT_ZD_OMEGA_2_FRAC;
+	ref_model_state->stab_alt_xdd_ref = xdd_vel + xdd_err;
 
 	/* integrate xd and xdd */
 	int64_t delta_xd;
 	delta_xd = (ref_model_state->stab_alt_xdd_ref) >> (F_UPDATE_RES + INT64_STAB_ALT_XDD_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC);
 	ref_model_state->stab_alt_xd_ref += delta_xd;
 
-	/*TODO substract v_h from PCH*/
+	/*set feedforward term*/
+	ref_model_state->stab_alt_ff_ref = ref_model_state->stab_alt_xd_ref;
+
+	/*subtract pch v_h*/
+	ref_model_state->stab_alt_xd_ref = ref_model_state->stab_alt_xd_ref - *v_h;
+
 	int64_t delta_x;
 	delta_x = (ref_model_state->stab_alt_xd_ref) >> (F_UPDATE_RES + INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_X_REF_FRAC);
 	ref_model_state->stab_alt_x_ref += delta_x;
-
-	// compute xdd = -2*zeta*omega*xd -omega^2(x_sp - x)
-	int64_t xdd_accel = (((int64_t)(-2*ref_model->zeta_omega))*(ref_model_state->stab_alt_xd_ref>>(INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)))>>STAB_ALT_ZD_ZETA_OMEGA_FRAC;
-	// compute zd error in zd_sp resolution
-	int64_t x_err; // with INT64_STAB_ALT_ZD_REF_FRAC
-	x_err = *x_sp - ref_model_state->stab_alt_x_ref;
-	int64_t xdd_vel = ((((int64_t)ref_model->omega_2))*(x_err >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)))>>STAB_ALT_ZD_OMEGA_2_FRAC;
-	ref_model_state->stab_alt_xdd_ref = xdd_accel + xdd_vel;
 
 }
 
@@ -269,14 +285,14 @@ static void stabilization_altitude_update_ref(int64_t *x_sp, struct Int32AltRefM
 static void altitude_run_inner_ff(int64_t *inner_zdd_ff, struct IntAltRefModelState *inner_ref_model_state, struct Int32NDIAltitudeGains *gains)
 {
 	/* Compute feedforward based on reference acceleration */
-	*inner_zdd_ff = (((int64_t)gains->ff)*inner_ref_model_state->stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC- INT64_STAB_ALT_ZDD_FRAC));
+	*inner_zdd_ff = (((int64_t)gains->ff)*inner_ref_model_state->stab_alt_ff_ref >> (INT64_STAB_ALT_XD_REF_FRAC- INT64_STAB_ALT_ZDD_FRAC));
 
 }
 
 static void altitude_run_outer_ff(int64_t *outer_zd_ff, struct IntAltRefModelState *outer_ref_model_state, struct Int32NDIAltitudeGains *gains)
 {
 	/* Compute feedforward based on reference acceleration */
-	*outer_zd_ff = (((int64_t)gains->ff)*outer_ref_model_state->stab_alt_xd_ref >> (INT64_STAB_ALT_XD_REF_FRAC- INT64_STAB_ALT_ZD_FRAC));
+	*outer_zd_ff = (((int64_t)gains->ff)*outer_ref_model_state->stab_alt_ff_ref >> (INT64_STAB_ALT_XD_REF_FRAC- INT64_STAB_ALT_ZD_FRAC));
 
 }
 
@@ -619,6 +635,9 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 
 	stabilization_altitude_update_ref(&small_zd_sp_ref_scale, &small_inner_ref_model, &small_inner_ref_model_state, &small_v_h_zd);
 	stabilization_altitude_update_ref(&large_zd_sp_ref_scale, &large_inner_ref_model, &large_inner_ref_model_state, &large_v_h_zd);
+
+	/*DEBUG REMOVE*/
+	alt_test = ((float)(small_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(36)));
 
 	/* calculate mass */
 	altitude_calc_mass();

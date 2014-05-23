@@ -46,27 +46,53 @@
       <dl_setting var="rate_ndi_gains.ff.r" min="0" step="1" max="50000"   module="stabilization/stabilization_rate_ndi_int" shortname="ff gain r" param="STABILIZATION_RATE_NDI_R_FFGAIN"/>	    
 	</dl_settings>
 	
-	<dl_settings NAME="Altitude Loop">
+    <dl_settings NAME="Att rate ref">
+      <dl_setting var="stab_rate_ref_model.omega.p" min="0" step="1" max="500"   module="stabilization/stabilization_rate_ref_int" shortname="omega p" param="STABILIZATION_RATE_NDI_REF_OMEGA_P"/>
+      <dl_setting var="stab_rate_ref_model.zeta.p" min="0" step="0.1" max="10"   module="stabilization/stabilization_rate_ref_int" shortname="zeta p" param="STABILIZATION_RATE_NDI_REF_ZETA_P"/>
+      
+      <dl_setting var="stab_rate_ref_model.omega.q" min="0" step="1" max="500"   module="stabilization/stabilization_rate_ref_int" shortname="omega q" param="STABILIZATION_RATE_NDI_OMEGA_Q"/>
+      <dl_setting var="stab_rate_ref_model.zeta.q" min="0" step="0.1" max="10"   module="stabilization/stabilization_rate_ref_int" shortname="zeta q" param="STABILIZATION_RATE_NDI_ZETA_Q"/>	
+      
+      <dl_setting var="stab_rate_ref_model.omega.r" min="0" step="1" max="500"   module="stabilization/stabilization_rate_ref_int" shortname="omega r" param="STABILIZATION_RATE_NDI_OMEGA_R"/>
+      <dl_setting var="stab_rate_ref_model.zeta.r" min="0" step="0.1" max="10"   module="stabilization/stabilization_rate_ref_int" shortname="zeta r" param="STABILIZATION_RATE_NDI_ZETA_R"/>
+	</dl_settings>
+	
+	<dl_settings NAME="Small altitude loop">
       <dl_setting var="small_inner_gains.p" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="pgain small inner alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_INNER_PGAIN"/>
       <dl_setting var="small_inner_gains.i" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="igain small inner alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_INNER_IGAIN"/>
       <dl_setting var="small_inner_gains.d" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="dgain small inner alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_INNER_DGAIN"/>
       <dl_setting var="small_inner_gains.ff" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="ffgain small inner alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_INNER_FFGAIN"/>
    
-      <dl_setting var="large_inner_gains.p" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="pgain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_PGAIN"/>
-      <dl_setting var="large_inner_gains.i" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="igain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_IGAIN"/>
-      <dl_setting var="large_inner_gains.d" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="dgain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_DGAIN"/>
-      <dl_setting var="large_inner_gains.ff" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="ffgain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_FFGAIN"/>
-
       <dl_setting var="small_outer_gains.p" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="pgain small outer alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_OUTER_PGAIN"/>
       <dl_setting var="small_outer_gains.i" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="igain small outer alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_OUTER_IGAIN"/>
       <dl_setting var="small_outer_gains.d" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="dgain small outer alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_OUTER_DGAIN"/>
       <dl_setting var="small_outer_gains.ff" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="ffgain small outer alt" param="STABILIZATION_ALTITUDE_NDI_SMALL_OUTER_FFGAIN"/>
-   
+    </dl_settings>
+    
+    <dl_settings NAME="Large altitude loop">
+      <dl_setting var="large_inner_gains.p" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="pgain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_PGAIN"/>
+      <dl_setting var="large_inner_gains.i" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="igain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_IGAIN"/>
+      <dl_setting var="large_inner_gains.d" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="dgain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_DGAIN"/>
+      <dl_setting var="large_inner_gains.ff" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="ffgain large inner alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_INNER_FFGAIN"/>
+      
       <dl_setting var="large_outer_gains.p" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="pgain large outer alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_OUTER_PGAIN"/>
       <dl_setting var="large_outer_gains.i" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="igain large outer alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_OUTER_IGAIN"/>
       <dl_setting var="large_outer_gains.d" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="dgain large outer alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_OUTER_DGAIN"/>
       <dl_setting var="large_outer_gains.ff" min="0" step="1" max="8000"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="ffgain large outer alt" param="STABILIZATION_ALTITUDE_NDI_LARGE_OUTER_FFGAIN"/>
    	</dl_settings>
-	
+   	
+   	<dl_settings NAME="Alt ref">
+      <dl_setting var="small_inner_ref_model.omega" min="0" step="1" max="500"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="omega sm.in." param="STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_OMEGA"/>
+      <dl_setting var="small_inner_ref_model.zeta" min="0" step="0.1" max="10"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta sm.in." param="STABILIZATION_ALTITUDE_NDI_SMALL_ZD_REF_ZETA"/>
+      
+      <dl_setting var="large_inner_ref_model.omega" min="0" step="1" max="500"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="omega l.in." param="STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_OMEGA"/>
+      <dl_setting var="large_inner_ref_model.zeta" min="0" step="0.1" max="10"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta l.in." param="STABILIZATION_ALTITUDE_NDI_LARGE_ZD_REF_ZETA"/>
+      
+      <dl_setting var="small_outer_ref_model.omega" min="0" step="1" max="500"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="omega sm.out." param="STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_OMEGA"/>
+      <dl_setting var="small_outer_ref_model.zeta" min="0" step="0.1" max="10"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta sm.out." param="STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA"/>
+      
+      <dl_setting var="large_outer_ref_model.omega" min="0" step="1" max="500"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="omega l.out." param="STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA"/>
+      <dl_setting var="large_outer_ref_model.zeta" min="0" step="0.1" max="10"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta l.out." param="STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA"/>    
+    </dl_settings>
   </dl_settings>
 </settings>

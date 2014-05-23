@@ -43,6 +43,7 @@ extern struct Int64Rates  stab_rate_ref_accel; ///< with RATE_REF_ACCEL_FRAC
 extern struct Int64Rates  stab_rate_ref_jerk; ///< with RATE_REF_JERK_FRAC
 extern struct Int32Rates  stab_rate_sp;  ///< with INT32_RATE_FRAC
 extern struct Int64Rates  stab_rate_ref;  ///< with RATE_REF_RATE_FRAC
+extern struct Int64Rates  stab_rate_ref_ff; // with RATE_REF_ACCEL_FRAC
 
 struct Int32RateRefModel {
   struct Int32Rates omega;

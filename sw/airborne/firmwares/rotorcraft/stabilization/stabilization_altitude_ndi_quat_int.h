@@ -76,17 +76,16 @@ extern int8_t altitude_vert_mode; // 0 manual, 1 climb, 2 alt
 
 /* General reference model structs */
 
-struct Int32AltRefModel {
-	int32_t omega;
-	int32_t zeta;
-	int32_t zeta_omega;
-	int32_t omega_2;
+struct FloatAltRefModel {
+	float omega;
+	float zeta;
 };
 
 struct IntAltRefModelState {
   int64_t stab_alt_xdd_ref; // with INT64_STAB_ALT_XDD_REF_FRAC
   int64_t stab_alt_xd_ref; // with INT64_STAB_ALT_XD_REF_FRAC
   int64_t stab_alt_x_ref; // with INT64_STAB_ALT_X_REF_FRAC
+  int64_t stab_alt_ff_ref; // with INT64_STAB_ALT_XD_REF_FRAC
 };
 
 /* General reference model fracs */
@@ -105,10 +104,10 @@ struct IntAltRefModelState {
 #define INT32_STAB_ALT_T_FRAC 16
 
 /* reference models */
-extern struct Int32AltRefModel small_inner_ref_model;
-extern struct Int32AltRefModel small_outer_ref_model;
-extern struct Int32AltRefModel large_inner_ref_model;
-extern struct Int32AltRefModel large_outer_ref_model;
+extern struct FloatAltRefModel small_inner_ref_model;
+extern struct FloatAltRefModel small_outer_ref_model;
+extern struct FloatAltRefModel large_inner_ref_model;
+extern struct FloatAltRefModel large_outer_ref_model;
 
 extern struct Int32Quat stab_att_sp_quat;
 extern int32_t mass;

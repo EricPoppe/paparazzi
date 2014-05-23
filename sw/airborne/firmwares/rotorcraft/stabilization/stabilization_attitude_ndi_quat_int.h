@@ -74,6 +74,7 @@ extern int32_t getMaxT(void);
 extern void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des);
 
 extern int32_t attitude_t_avg_cmd;
+extern float psi_f;
 
 /*DEBUG REMOVE*/
 extern bool_t stabilization_override_on;

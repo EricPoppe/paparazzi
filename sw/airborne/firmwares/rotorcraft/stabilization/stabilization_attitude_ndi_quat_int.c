@@ -100,6 +100,7 @@ int16_t thrust_command[4]; // thrust command send to engines
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
 int32_t attitude_t_avg_cmd = 0;
+float psi_f;
 
 //struct Int32Rates stab_rate_sp; // rate setpoint commanded by attitude controller
 struct Int32ThrustDiff rate_thrust_diff; // thrust differences commanded by rate controller, INT32_STAB_ALT_T_FRAC
@@ -455,7 +456,7 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //    	thrust_command[2] = -9600;
 //    	thrust_command[3] = -9600;
 //    }
-//
+
 //		/*DEBUG REMOVE - 0 to step to 0, 10 sec per part*/
 //		if (time_counter == 0)
 //			start_time = sys_time.nb_sec;
@@ -491,7 +492,7 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //				thrust_command[2] = -9600;
 //				thrust_command[3] = -9600;
 //			}
-
+//
   	thrust_command[0] = attitude_thrust_command.T1;
   	thrust_command[1] = attitude_thrust_command.T2;
   	thrust_command[2] = attitude_thrust_command.T3;
@@ -534,17 +535,17 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 	  altitude_zd_sp = ((0.5)*(((int64_t)1)<<(36)));
 	}
 
-//	/*DEBUG REMOVE tune altitude*/
-//	if ((alt_sp || alt_d_sp) && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
-//
-//		psi_sp = stateGetNedToBodyEulers_f()->psi;
-//
-//		stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
-//		stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
-//		stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
-//		stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
-//
-//	}
+	/*DEBUG REMOVE tune altitude*/
+	if ((alt_sp || alt_d_sp) && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+
+		psi_sp = stateGetNedToBodyEulers_f()->psi;
+
+		stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
+		stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
+		stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
+		stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
+
+	}
 
 	/* run altitude controller to find quat_sp and altitude_t_avg */
   stabilization_altitude_run(enable_integrator);
@@ -593,7 +594,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
   /* TODO: atan2, sin and cos in BFP, current available functions are not precise enough */
   int32_t beta, psi, cpsi_2, spsi_2, salpha_2;
-  float salpha_2_f, q3_f, q0_f, psi_f, rx, ry, cpsi_2_f, spsi_2_f, beta_f;
+  float salpha_2_f, q3_f, q0_f, rx, ry, cpsi_2_f, spsi_2_f, beta_f;
 
   q3_f = QUAT1_FLOAT_OF_BFP(att_err.qz);
   q0_f = QUAT1_FLOAT_OF_BFP(att_err.qi);
@@ -702,6 +703,14 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T4 = 0;
   }
 
+//    /*DEBUG REMOVE test*/
+//    test1 = electrical.vsupply;
+//    test2 = thrust_command[0];
+//    test3 = thrust_command[1];
+//    test4 = thrust_command[2];
+//    test5 = thrust_command[3];
+//    test6 = 0;
+
 //  /*DEBUG REMOVE test*/
 //  test1 = FLOAT_OF_BFP(altitude_t_avg,INT32_STAB_ALT_T_FRAC);
 //  test2 = FLOAT_OF_BFP(rate_thrust_diff.pitch,INT32_STAB_ALT_T_FRAC);
@@ -726,13 +735,13 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test5 = RATE_FLOAT_OF_BFP(stab_rate_sp.p);
 //  test6 = rate_test;
 
-  /*DEBUG REMOVE tilt q rate tuning*/
-  test1 = FLOAT_OF_BFP(rate_thrust_diff.pitch,INT32_STAB_ALT_T_FRAC);
-  test2 = ((float)(stab_rate_sp.q)/((int32_t)1<<(INT32_RATE_FRAC)));
-  test3 = FLOAT_OF_BFP(stateGetBodyRates_i()->q,INT32_RATE_FRAC);
-  test4 = ((float)(stab_rate_ref.q)/((int64_t)1<<(RATE_REF_RATE_FRAC)));
-  test5 = RATE_FLOAT_OF_BFP(stab_rate_sp.q);
-  test6 = rate_test;
+//  /*DEBUG REMOVE tilt q rate tuning*/
+//  test1 = FLOAT_OF_BFP(rate_thrust_diff.pitch,INT32_STAB_ALT_T_FRAC);
+//  test2 = ((float)(stab_rate_sp.q)/((int32_t)1<<(INT32_RATE_FRAC)));
+//  test3 = FLOAT_OF_BFP(stateGetBodyRates_i()->q,INT32_RATE_FRAC);
+//  test4 = ((float)(stab_rate_ref.q)/((int64_t)1<<(RATE_REF_RATE_FRAC)));
+//  test5 = RATE_FLOAT_OF_BFP(stab_rate_sp.q);
+//  test6 = rate_test;
 
 //  /*DEBUG REMOVE pch tilt test*/
 //  test1 = FLOAT_OF_BFP(rate_thrust_diff.roll,INT32_STAB_ALT_T_FRAC);
@@ -795,13 +804,13 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test5 = 0;
 //  test6 = 0;
 
-//  /*DEBUG REMOVE vz tuning */
-//  test1 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
-//	test2 = alt_test;
-//  test3 = 0;
-//  test4 = 0;
-//  test5 = 0;
-//  test6 = 0;
+  /*DEBUG REMOVE vz tuning */
+  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
+	test4 = alt_test;
+  test1 = 0;
+  test2 = 0;
+  test5 = 0;
+  test6 = 0;
 
 //  /*DEBUG REMOVE z tuning */
 //  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);

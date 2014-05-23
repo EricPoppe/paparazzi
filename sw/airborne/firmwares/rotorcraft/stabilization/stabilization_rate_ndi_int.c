@@ -266,11 +266,20 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
 		stabilization_rate_ndi_sum_err.r = -(1 << (29));
 
   /* compute the feed forward command */
-  struct Int32Rates stab_rate_ref_accel_scaled; // with VIRTUAL_INPUT_FRAC
-  stab_rate_ref_accel_scaled.p = (int32_t)(stab_rate_ref_accel.p >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
-  stab_rate_ref_accel_scaled.q = (int32_t)(stab_rate_ref_accel.q >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
-  stab_rate_ref_accel_scaled.r = (int32_t)(stab_rate_ref_accel.r >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
-  rate_ndi_run_ff(&virtual_input_ff, &rate_ndi_gains, &stab_rate_ref_accel_scaled);
+  struct Int32Rates stab_rate_ref_ff_scaled; // with VIRTUAL_INPUT_FRAC
+  stab_rate_ref_ff_scaled.p = (int32_t)(stab_rate_ref_ff.p >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
+  stab_rate_ref_ff_scaled.q = (int32_t)(stab_rate_ref_ff.q >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
+  stab_rate_ref_ff_scaled.r = (int32_t)(stab_rate_ref_ff.r >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
+
+  struct Int32Rates rate_ref_ff_body;
+  int32_t cpsi, spsi;
+  cpsi = TRIG_BFP_OF_REAL(cosf(psi_f));
+  spsi = TRIG_BFP_OF_REAL(sinf(psi_f));
+  rate_ref_ff_body.p = INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.p,cpsi,INT32_TRIG_FRAC) + INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.q,spsi,INT32_TRIG_FRAC);
+  rate_ref_ff_body.q = INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.q,cpsi,INT32_TRIG_FRAC) - INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.p,spsi,INT32_TRIG_FRAC);
+  rate_ref_ff_body.r = stab_rate_ref_ff_scaled.r;
+
+  rate_ndi_run_ff(&virtual_input_ff, &rate_ndi_gains, &rate_ref_ff_body);
 
   /* compute the feed back command */
   rate_ndi_run_fb(&virtual_input_fb, &rate_ndi_gains, &rate_ndi_err, &accel_err, &stabilization_rate_ndi_sum_err);
@@ -279,10 +288,6 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   virtual_input.p = virtual_input_fb.p + virtual_input_ff.p;
   virtual_input.q = virtual_input_fb.q + virtual_input_ff.q;
   virtual_input.r = virtual_input_fb.r + virtual_input_ff.r;
-
-
-//  /*DEBUG REMOVE*/
-//  rate_test = FLOAT_OF_BFP(virtual_input_ff.p,VIRTUAL_INPUT_FRAC);
 
   /* compute thrust from desired angular acceleration */
   rate_ndi_run_accel_to_thrust(&rate_thrust_diff, &virtual_input);
