@@ -68,12 +68,15 @@ char *ivy_bus                   = "127.255.255.255:2010";
 uint32_t freq_transmit          = 30;     ///< Transmitting frequency in Hz
 uint16_t min_velocity_samples   = 4;      ///< The amount of position samples needed for a valid velocity
 
+/** Connection timeout when not receiving **/
+#define CONNECTION_TIMEOUT          .5
+
 /** NatNet parsing defines */
 #define MAX_PACKETSIZE    100000
 #define MAX_NAMELENGTH    256
 #define MAX_RIGIDBODIES   128
 
-#define NAT_PING                    0 
+#define NAT_PING                    0
 #define NAT_PINGRESPONSE            1
 #define NAT_REQUEST                 2
 #define NAT_RESPONSE                3
@@ -102,7 +105,14 @@ struct RigidBody {
   int nVelocityTransmit;            ///< Amount of transmits since last valid velocity transmit
 };
 struct RigidBody rigidBodies[MAX_RIGIDBODIES];    ///< All rigid bodies which are tracked
-uint8_t ac_ids[MAX_RIGIDBODIES];                  ///< Mapping from rigid body ID to aircraft ID
+
+/** Mapping between rigid body and aircraft */
+struct Aircraft {
+  uint8_t ac_id;
+  float lastSample;
+  bool connected;
+};
+struct Aircraft aircrafts[MAX_RIGIDBODIES];                  ///< Mapping from rigid body ID to aircraft ID
 
 /** Natnet socket connections */
 struct FmsNetwork *natnet_data, *natnet_cmd;
@@ -137,14 +147,14 @@ void natnet_parse(unsigned char *in) {
     // Frame number
     int frameNumber = 0; memcpy(&frameNumber, ptr, 4); ptr += 4;
     printf_natnet("Frame # : %d\n", frameNumber);
-    
+
     // ========== MARKERSETS ==========
     // Number of data sets (markersets, rigidbodies, etc)
     int nMarkerSets = 0; memcpy(&nMarkerSets, ptr, 4); ptr += 4;
     printf_natnet("Marker Set Count : %d\n", nMarkerSets);
 
     for (i=0; i < nMarkerSets; i++)
-    {    
+    {
       // Markerset name
       char szName[256];
       strcpy(szName, ptr);
@@ -408,9 +418,31 @@ gboolean timeout_transmit_callback(gpointer data) {
       fprintf(stderr, "Could not parse rigid body %d from NatNet, because ID is higher then or equal to %d (MAX_RIGIDBODIES-1).\r\n", rigidBodies[i].id, MAX_RIGIDBODIES-1);
       exit(EXIT_FAILURE);
     }
-    // Check if we want to transmit this rigid and it was sampled
-    if(ac_ids[rigidBodies[i].id] == 0 || rigidBodies[i].nSamples < 1)
+
+    // Check if we want to transmit (follow) this rigid
+    if(aircrafts[rigidBodies[i].id].ac_id == 0)
       continue;
+
+    // When we don track anymore and timeout or start tracking
+    if(rigidBodies[i].nSamples < 1
+      && aircrafts[rigidBodies[i].id].connected
+      && (natnet_latency - aircrafts[rigidBodies[i].id].lastSample) > CONNECTION_TIMEOUT) {
+      aircrafts[rigidBodies[i].id].connected = FALSE;
+      fprintf(stderr, "#error Lost tracking rigid id %d, aircraft id %d.\n",
+        rigidBodies[i].id, aircrafts[rigidBodies[i].id].ac_id);
+    }
+    else if(rigidBodies[i].nSamples > 0 && !aircrafts[rigidBodies[i].id].connected) {
+      fprintf(stderr, "#pragma message: Now tracking rigid id %d, aircraft id %d.\n",
+        rigidBodies[i].id, aircrafts[rigidBodies[i].id].ac_id);
+    }
+
+    // Check if we still track the rigid
+    if(rigidBodies[i].nSamples < 1)
+      continue;
+
+    // Update the last tracked
+    aircrafts[rigidBodies[i].id].connected = TRUE;
+    aircrafts[rigidBodies[i].id].lastSample = natnet_latency;
 
     // Defines to make easy use of paparazzi math
     struct EnuCoor_d pos, speed;
@@ -432,7 +464,7 @@ gboolean timeout_transmit_callback(gpointer data) {
     rigidBodies[i].nVelocityTransmit++;
     if(rigidBodies[i].nVelocitySamples >= min_velocity_samples) {
       // Calculate the derevative of the sum to get the correct velocity     (1 / freq_transmit) * (samples / total_samples)
-      double sample_time = //((double)rigidBodies[i].nVelocitySamples / (double)rigidBodies[i].totalVelocitySamples) / 
+      double sample_time = //((double)rigidBodies[i].nVelocitySamples / (double)rigidBodies[i].totalVelocitySamples) /
                               ((double)rigidBodies[i].nVelocityTransmit / (double)freq_transmit);
       rigidBodies[i].vel_x = rigidBodies[i].vel_x / sample_time;
       rigidBodies[i].vel_y = rigidBodies[i].vel_y / sample_time;
@@ -458,14 +490,14 @@ gboolean timeout_transmit_callback(gpointer data) {
     double heading = -orient_eulers.psi-tracking_offset_angle;
     NormRadAngle(heading);
 
-    printf_debug("[%d -> %d]Samples: %d\t%d\t\tTiming: %3.3f latency\n", rigidBodies[i].id, ac_ids[rigidBodies[i].id]
+    printf_debug("[%d -> %d]Samples: %d\t%d\t\tTiming: %3.3f latency\n", rigidBodies[i].id, aircrafts[rigidBodies[i].id].ac_id
       , rigidBodies[i].nSamples, rigidBodies[i].nVelocitySamples, natnet_latency);
-    printf_debug("    Heading: %f\t\tPosition: %f\t%f\t%f\t\tVelocity: %f\t%f\t%f\n", DegOfRad(heading), 
-      rigidBodies[i].x, rigidBodies[i].y, rigidBodies[i].z, 
+    printf_debug("    Heading: %f\t\tPosition: %f\t%f\t%f\t\tVelocity: %f\t%f\t%f\n", DegOfRad(heading),
+      rigidBodies[i].x, rigidBodies[i].y, rigidBodies[i].z,
       rigidBodies[i].ecef_vel.x, rigidBodies[i].ecef_vel.y, rigidBodies[i].ecef_vel.z);
 
     // Transmit the REMOTE_GPS packet on the ivy bus
-    IvySendMsg("0 REMOTE_GPS %d %d %d %d %d %d %d %d %d %d %d %d %d %d", ac_ids[rigidBodies[i].id], 
+    IvySendMsg("0 REMOTE_GPS %d %d %d %d %d %d %d %d %d %d %d %d %d %d", aircrafts[rigidBodies[i].id].ac_id,
       rigidBodies[i].nMarkers,                //uint8 Number of markers (sv_num)
       (int)(ecef_pos.x*100.0),                //int32 ECEF X in CM
       (int)(ecef_pos.y*100.0),                //int32 ECEF Y in CM
@@ -513,10 +545,10 @@ static gboolean sample_data(GIOChannel *chan, GIOCondition cond, gpointer data) 
   return TRUE;
 }
 
- 
+
 /** Print the program help */
 void print_help(char* filename) {
-  static const char *usage = 
+  static const char *usage =
     "Usage: %s [options]\n"
     " Options :\n"
     "   -h, --help                Display this help\n"
@@ -563,7 +595,7 @@ static void parse_options(int argc, char** argv) {
     // Set the verbosity level
     if(strcmp(argv[i], "--verbosity") == 0 || strcmp(argv[i], "-v") == 0) {
       check_argcount(argc, argv, i, 1);
-      
+
       verbose = atoi(argv[++i]);
     }
 
@@ -579,7 +611,7 @@ static void parse_options(int argc, char** argv) {
         print_help(argv[0]);
         exit(EXIT_FAILURE);
       }
-      ac_ids[rigid_id] = ac_id;
+      aircrafts[rigid_id].ac_id = ac_id;
       count_ac++;
     }
 
@@ -711,7 +743,7 @@ int main(int argc, char** argv)
   IvyStart(ivy_bus);
 
   // Create the main timers
-  printf_debug("Starting transmitting and sampling timeouts (transmitting frequency: %dHz, minimum velocity samples: %d)\n", 
+  printf_debug("Starting transmitting and sampling timeouts (transmitting frequency: %dHz, minimum velocity samples: %d)\n",
     freq_transmit, min_velocity_samples);
   g_timeout_add(1000/freq_transmit, timeout_transmit_callback, NULL);
 

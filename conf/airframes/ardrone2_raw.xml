@@ -4,7 +4,6 @@
 
   <firmware name="rotorcraft">
     <target name="ap" board="ardrone2_raw">
-      <!--define name="USE_SONAR"-->
       <define name="AUTOPILOT_DISABLE_AHRS_KILL"/>
       <subsystem name="telemetry" type="udp"/>
       <subsystem name="radio_control" type="datalink"/>
@@ -14,6 +13,8 @@
       <subsystem name="fdm" type="jsbsim"/>
       <subsystem name="radio_control" type="ppm"/>
     </target>
+
+    <define name="USE_SONAR" value="TRUE"/>
 
 	<!-- Subsystem section -->
     <subsystem name="motor_mixing"/>
@@ -108,10 +109,8 @@
   </section>
 
   <section name="INS" prefix="INS_">
-    <define name="SONAR_SENS" value="0.00034"/>
     <define name="SONAR_MAX_RANGE" value="2.2"/>
     <define name="SONAR_UPDATE_ON_AGL" value="TRUE"/>
-    <define name="SONAR_VARIANCE_THRESHOLD" VALUE="2.0"/>
   </section>
 
   <section name="STABILIZATION_RATE" prefix="STABILIZATION_RATE_">
@@ -159,9 +158,9 @@
     <define name="REF_MAX_Q" value="600." unit="deg/s"/>
     <define name="REF_MAX_QDOT" value="RadOfDeg(8000.)"/>
 
-    <define name="REF_OMEGA_R" value="300" unit="deg/s"/>
+    <define name="REF_OMEGA_R" value="200" unit="deg/s"/>
     <define name="REF_ZETA_R" value="0.9"/>
-    <define name="REF_MAX_R" value="400." unit="deg/s"/>
+    <define name="REF_MAX_R" value="300." unit="deg/s"/>
     <define name="REF_MAX_RDOT" value="RadOfDeg(4000.)"/>
 
     <!-- feedback -->
@@ -214,8 +213,8 @@
   </section>
 
   <section name="AUTOPILOT">
-    <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
+    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
     <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
   </section>
