@@ -457,6 +457,35 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //    	thrust_command[3] = -9600;
 //    }
 
+//		/*DEBUG REMOVE - step of -500 every 10 seconds*/
+//		if (time_counter == 0)
+//			start_time = sys_time.nb_sec;
+//
+//		time_counter = 1;
+//
+//		step = (sys_time.nb_sec - start_time)/10;
+//
+//		cmd = step*500;
+//
+//		if (step < 20){
+//			thrust_command[0] = 9500 - cmd;
+//			thrust_command[1] = 9500 - cmd;
+//			thrust_command[2] = 9500 - cmd;
+//			thrust_command[3] = 9500 - cmd;
+//		}
+//		else if (step == 20){
+//			thrust_command[0] = 0;
+//			thrust_command[1] = 0;
+//			thrust_command[2] = 0;
+//			thrust_command[3] = 0;
+//		}
+//		else{
+//			thrust_command[0] = -9600;
+//			thrust_command[1] = -9600;
+//			thrust_command[2] = -9600;
+//			thrust_command[3] = -9600;
+//		}
+
 //		/*DEBUG REMOVE - 0 to step to 0, 10 sec per part*/
 //		if (time_counter == 0)
 //			start_time = sys_time.nb_sec;
@@ -492,7 +521,38 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //				thrust_command[2] = -9600;
 //				thrust_command[3] = -9600;
 //			}
+
+//		/*DEBUG REMOVE - 7500 to step to 7500, 10 sec per part*/
+//		if (time_counter == 0)
+//			start_time = sys_time.nb_sec;
 //
+//		time_counter = 1;
+//
+//		step = (sys_time.nb_sec - start_time)/10;
+//		cmd = (step*1000)/2;
+//
+//		if (step == 0 || step == 1 || step == 3 || step == 5 ||
+//				step == 7 || step == 9 || step == 11 || step == 13 ||
+//				step == 15){
+//			thrust_command[0] = 7500;
+//			thrust_command[1] = 7500;
+//			thrust_command[2] = 7500;
+//			thrust_command[3] = 7500;
+//		}
+//		else if (step < 15){
+//			thrust_command[0] = cmd;
+//			thrust_command[1] = cmd;
+//			thrust_command[2] = cmd;
+//			thrust_command[3] = cmd;
+//		}
+//		else{
+//			thrust_command[0] = -9600;
+//			thrust_command[1] = -9600;
+//			thrust_command[2] = -9600;
+//			thrust_command[3] = -9600;
+//		}
+
+////
   	thrust_command[0] = attitude_thrust_command.T1;
   	thrust_command[1] = attitude_thrust_command.T2;
   	thrust_command[2] = attitude_thrust_command.T3;
@@ -703,13 +763,13 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T4 = 0;
   }
 
-//    /*DEBUG REMOVE test*/
-//    test1 = electrical.vsupply;
-//    test2 = thrust_command[0];
-//    test3 = thrust_command[1];
-//    test4 = thrust_command[2];
-//    test5 = thrust_command[3];
-//    test6 = 0;
+    /*DEBUG REMOVE test*/
+    test1 = electrical.vsupply;
+    test2 = thrust_command[0];
+    test3 = thrust_command[1];
+    test4 = thrust_command[2];
+    test5 = thrust_command[3];
+    test6 = 0;
 
 //  /*DEBUG REMOVE test*/
 //  test1 = FLOAT_OF_BFP(altitude_t_avg,INT32_STAB_ALT_T_FRAC);
@@ -804,13 +864,13 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test5 = 0;
 //  test6 = 0;
 
-  /*DEBUG REMOVE vz tuning */
-  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
-	test4 = alt_test;
-  test1 = 0;
-  test2 = 0;
-  test5 = 0;
-  test6 = 0;
+//  /*DEBUG REMOVE vz tuning */
+//  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
+//	test4 = alt_test;
+//  test1 = 0;
+//  test2 = 0;
+//  test5 = 0;
+//  test6 = 0;
 
 //  /*DEBUG REMOVE z tuning */
 //  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
