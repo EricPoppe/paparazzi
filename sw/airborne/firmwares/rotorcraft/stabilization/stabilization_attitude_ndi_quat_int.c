@@ -42,7 +42,7 @@
 #include "std.h"
 #include <stdlib.h>
 
-float vsupply_rest;
+int32_t vsupply_rest; //with INT32_VREST_FRAC
 
 /*DEBUG REMOVE*/
 #include "subsystems/radio_control.h"
@@ -64,18 +64,22 @@ float theta_d_sp = STABILIZATION_ATTITUDE_NDI_THETA_D_SP;
 float psi_d_sp = STABILIZATION_ATTITUDE_NDI_PSI_D_SP;
 float z_sp = STABILIZATION_ATTITUDE_NDI_Z_SP;
 float z_d_sp = STABILIZATION_ATTITUDE_NDI_Z_D_SP;
+float tdiff_yaw_sp = STABILIZATION_ATTITUDE_NDI_TDIFF_SP;
 bool_t att_sp = STABILIZATION_ATTITUDE_NDI_ATT_SP;
 bool_t att_d_sp = STABILIZATION_ATTITUDE_NDI_ATT_D_SP;
 bool_t alt_sp = STABILIZATION_ATTITUDE_NDI_ALT_SP;
 bool_t alt_d_sp = STABILIZATION_ATTITUDE_NDI_ALT_D_SP;
+bool_t tau_step = STABILIZATION_ATTITUDE_NDI_TAU;
 struct Int32Quat quat_override_sp;
 struct Int32Vect2 phi_theta_override_sp;
 int32_t psi_override_sp;
 
 /*DEBUG REMOVE RPM TESTS*/
 int8_t time_counter;
-int8_t step;
 uint32_t start_time;
+int8_t step;
+uint32_t ticks;
+uint32_t start_ticks;
 
 struct Int32NDIAttitudeGains attitude_ndi_gains = {
 	{STABILIZATION_ATTITUDE_NDI_TILT_PGAIN, STABILIZATION_ATTITUDE_NDI_YAW_PGAIN},
@@ -96,6 +100,25 @@ struct Int16Thrust attitude_thrust_command; // thrust command calculated by cont
 struct Int32Thrust attitude_thrust; // with INT32_STAB_ALT_T_FRAC
 int16_t thrust_command[4]; // thrust command send to engines
 
+/*thrust and rpm constants int and float*/
+float c_rpm_f 		= 181.47;
+float c_rpm_cmd_f = 0.05229;
+float c_t_f 			= 0.0495;
+float c_t_rpm_f 	= 0.0005651;
+float c_t_rpm_2_f = 0.000005149;
+
+#define INT32_C_RPM_FRAC 8
+#define INT32_C_RPM_CMD_FRAC 19
+#define INT32_C_T_FRAC 14
+#define INT32_C_T_RPM_FRAC 24
+#define INT32_C_T_RPM_2_FRAC 30
+
+int32_t c_rpm = BFP_OF_REAL(181.47,INT32_C_RPM_FRAC);
+int32_t c_rpm_cmd = BFP_OF_REAL(0.05229,INT32_C_RPM_CMD_FRAC);
+int32_t c_t = BFP_OF_REAL(0.0495,INT32_C_T_FRAC);
+int32_t c_t_rpm = BFP_OF_REAL(0.0005651,INT32_C_T_RPM_FRAC);
+int32_t c_t_rpm_2 = BFP_OF_REAL(0.000005149,INT32_C_T_RPM_2_FRAC);
+
 /* extern variables */
 int32_t stabilization_att_fb_cmd[COMMANDS_NB];
 int32_t stabilization_att_ff_cmd[COMMANDS_NB];
@@ -112,6 +135,9 @@ struct Int32ThrustDiff rate_thrust_diff; // thrust differences commanded by rate
 #define GAIN_PRESCALER_I 1
 
 #define ATT_GAINS_FRAC 7
+#define INT64_C_BAT_FRAC 40
+#define INT32_VREST_FRAC 12
+#define INT32_RPM_FRAC 8
 
 #if PERIODIC_TELEMETRY
 #include "subsystems/datalink/telemetry.h"
@@ -200,7 +226,7 @@ void stabilization_attitude_init(void) {
   /*DEBUG REMOVE*/
   time_counter = 0;
   step = 0;
-  start_time = 0;
+  start_ticks = 0;
 
 
 #if PERIODIC_TELEMETRY
@@ -259,31 +285,38 @@ void stabilization_attitude_set_earth_cmd_i(struct Int32Vect2 *cmd, int32_t head
 #define OFFSET_AND_ROUND(_a, _b) (((_a)+(1<<((_b)-1)))>>(_b))
 #define OFFSET_AND_ROUND2(_a, _b) (((_a)+(1<<((_b)-1))-((_a)<0?1:0))>>(_b))
 
-/* calculate thrust setting COMMAND_THRUST based on real thrust */
+/* calculate thrust setting COMMAND_THRUST based on desired thrust TODO:INT */
 void attitude_tcommand_from_t(int16_t *tcom, int32_t *t){
 
-	int32_t thrust;
-	thrust = *t;
-	float thrust_f = FLOAT_OF_BFP(thrust,INT32_STAB_ALT_T_FRAC);
+	float tcom_f;
+	float thrust_f;
+	thrust_f = FLOAT_OF_BFP(*t,INT32_STAB_ALT_T_FRAC);
 
-	if (thrust_f <= 52.5/1000./4.*9.80665)
+	float a;
+	float b;
+	float c;
+	a = c_t_rpm_2_f*c_rpm_cmd_f*c_rpm_cmd_f;
+	b = c_t_rpm_2_f*2.*c_rpm_f*c_rpm_cmd_f - c_t_rpm_f*c_rpm_cmd_f;
+	c = c_t_rpm_2_f*c_rpm_f*c_rpm_f - c_t_rpm_f*c_rpm_f + c_t_f - thrust_f;
+
+	if (thrust_f <= 0.1171)
 		*tcom = 0;
 	else {
-	  /*TODO: full relation between thrust and COMMAND_THRUST*/
-	  *tcom = (int16_t)((-0.031*(9.80665/1000./4.)+sqrtf(0.031*(9.80665/1000./4.)*0.031*(9.80665/1000./4.) - 4.*(52.5*(9.80665/1000./4.) - thrust_f)*0.0000065*(9.80665/1000./4.)))/(2.*0.0000065*(9.80665/1000./4.)));
+		tcom_f = (-b + sqrtf(b*b- 4.*a*c))/(2.*a);
+	  *tcom = ((int16_t)tcom_f);
 	}
-
 }
 
 /* calculate real thrust based on thrust setting COMMAND_THRUST */
 void attitude_t_from_tcommand(int32_t *t, int16_t *tcom){
 
-	/*TODO: full relation between thrust and COMMAND_THRUST*/
-	float tcom_f = *tcom;
-	float thrust_from_tcom_f = (52.5 + 0.031* (tcom_f) + 0.0000065*(tcom_f)* (tcom_f))/1000.*9.80665/4.;
+	int32_t rpm; // with INT32_RPM_FRAC, static rpm corresponding with tcom
 
-	*t = BFP_OF_REAL(thrust_from_tcom_f,INT32_STAB_ALT_T_FRAC);
+	rpm = (c_rpm >> (INT32_C_RPM_FRAC - INT32_RPM_FRAC)) + (c_rpm_cmd*((int32_t) *tcom) >> (INT32_C_RPM_CMD_FRAC - INT32_RPM_FRAC));
 
+	*t = ((((int64_t)c_t_rpm_2)*((int64_t)rpm)*((int64_t)rpm)) >> ((INT32_C_T_RPM_2_FRAC + INT32_RPM_FRAC + INT32_RPM_FRAC) - INT32_STAB_ALT_T_FRAC))
+			- (((int64_t)c_t_rpm)*((int64_t)rpm) >> ((INT32_C_T_RPM_FRAC + INT32_RPM_FRAC) - INT32_STAB_ALT_T_FRAC))
+			+ (c_t << (INT32_STAB_ALT_T_FRAC - INT32_C_T_FRAC));
 }
 
 /* calculate thrust difference required for desired yaw torque*/
@@ -291,31 +324,36 @@ void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des){
 
 	/*TODO: real relation, should be linear as T and tau are in the same order related to the input (theoretically) */
 	int32_t gain;
-	gain = 525;
-	*tdiff = *tau_des*gain/4;
+	gain = 20; // thrust/torque/4
+	*tdiff = *tau_des*gain; //INT32_STAB_ALT_T_FRAC
 
 }
 
 /* thrust limiter, tavg +- available tdiff yaw +- pitch and roll tdiff, apply limits*/
 static void attitude_limit_t(void){
 
-	/*DEBUG REMOVE*/
+//	/*DEBUG REMOVE*/
 //	rate_thrust_diff.yaw = 0;
 //	rate_thrust_diff.pitch = 0;
 //	rate_thrust_diff.roll = 0;
 //	int16_t tcom = 3000;
 //	attitude_t_from_tcommand(&altitude_t_avg,&tcom);
 
+  /*DEBUG REMOVE*/
+	if (tau_step && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+		rate_thrust_diff.yaw = BFP_OF_REAL(tau_step,INT32_STAB_ALT_T_FRAC);
+	}
+
 	/* limit tavg between 0 and max thrust */
-	if (altitude_t_avg > getMaxT())
-		altitude_t_avg = getMaxT();
+	if (altitude_t_avg > getMaxTavg())
+		altitude_t_avg = getMaxTavg();
 	else if (altitude_t_avg < 0)
 		altitude_t_avg = 0;
 
 	/* find available tdiff for yaw control */
 	int32_t max_yaw_diff;
-	if ((getMaxT() - altitude_t_avg) < (altitude_t_avg - 0))
-		max_yaw_diff = getMaxT() - altitude_t_avg;
+	if ((getMaxTavg() - altitude_t_avg) < (altitude_t_avg - 0))
+		max_yaw_diff = getMaxTavg() - altitude_t_avg;
 	else
 		max_yaw_diff = altitude_t_avg - 0;
 
@@ -338,49 +376,80 @@ static void attitude_limit_t(void){
 	attitude_thrust.T4 = attitude_thrust.T4 - rate_thrust_diff.pitch/4 + rate_thrust_diff.roll/4;
 
 	/* limit between 0 and max thrust */
-	if (attitude_thrust.T1 > getMaxT())
-		attitude_thrust.T1 = getMaxT();
+	int32_t max_t;
+	int16_t max_t_com = 9600;
+
+	attitude_t_from_tcommand(&max_t,&max_t_com);
+
+	if (attitude_thrust.T1 > max_t)
+		attitude_thrust.T1 = max_t;
 	else if (attitude_thrust.T1  < 0)
 		attitude_thrust.T1  = 0;
 
-	if (attitude_thrust.T2 > getMaxT())
-		attitude_thrust.T2 = getMaxT();
+	if (attitude_thrust.T2 > max_t)
+		attitude_thrust.T2 = max_t;
 	else if (attitude_thrust.T2  < 0)
 		attitude_thrust.T2  = 0;
 
-	if (attitude_thrust.T3 > getMaxT())
-		attitude_thrust.T3 = getMaxT();
+	if (attitude_thrust.T3 > max_t)
+		attitude_thrust.T3 = max_t;
 	else if (attitude_thrust.T3  < 0)
 		attitude_thrust.T3  = 0;
 
-	if (attitude_thrust.T4 > getMaxT())
-		attitude_thrust.T4 = getMaxT();
+	if (attitude_thrust.T4 > max_t)
+		attitude_thrust.T4 = max_t;
 	else if (attitude_thrust.T4  < 0)
 		attitude_thrust.T4  = 0;
 
 }
 
-/* estimate the voltage level if batt in rest */
+/* estimate the voltage level if batt in rest TODO:INT*/
 static void attitude_calc_vrest(void){
+	int64_t c_cmd_2 = ((0.00000000815)*((int64_t)1<<(INT64_C_BAT_FRAC))); // with INT64_C_BAT_FRAC
+	int64_t c_cmd = ((0.0000012)*((int64_t)1<<(INT64_C_BAT_FRAC))); // with INT64_C_BAT_FRAC
 
-	vsupply_rest = (-0.3/9525.*((float)attitude_t_avg_cmd) + ((float)electrical.vsupply)/10.)/(1. - 0.1/9525.*((float)attitude_t_avg_cmd));
-
+	vsupply_rest = ((((c_cmd_2*((int64_t)attitude_t_avg_cmd*(int64_t)attitude_t_avg_cmd)) >> (INT64_C_BAT_FRAC - INT32_VREST_FRAC))
+			+ BFP_OF_REAL(electrical.vsupply,INT32_VREST_FRAC)/10) << INT32_VREST_FRAC)
+			/(BFP_OF_REAL(1,INT32_VREST_FRAC) - ((c_cmd*((int64_t)attitude_t_avg_cmd)) >> (INT64_C_BAT_FRAC - INT32_VREST_FRAC)));
 }
 
 /* calculate maximum thrust */
-int32_t getMaxT(void){
+int32_t getMaxTavg(void){
+
+	int64_t C_T_2 = ((0.0000051485)*((int64_t)1<<(INT64_PCH_C_T_FRAC))); //INT64_PCH_C_T_FRAC
+	int64_t C_T = ((0.0005651)*((int64_t)1<<(INT64_PCH_C_T_FRAC))); //INT64_PCH_C_T_FRAC
+	int32_t C_T_c = BFP_OF_REAL(0.04949,INT32_PCH_T_FRAC); //INT32_PCH_T_FRAC
 
 	int32_t max_thrust; //with INT32_STAB_ALT_T_FRAC
+	int64_t rpm_2; // with INT32_PCH_OMEGA_FRAC
+	int64_t rpm; // with INT32_PCH_OMEGA_FRAC
+	float rpm_2_f;
+	float a = -0.000002981;
+	float b;
+	float c;
+	float rpm_f;
 
 	attitude_calc_vrest();
 
-	int16_t max_cmd;
-	max_cmd = (vsupply_rest/(0.0013+0.1/9525.*vsupply_rest - 0.3/9525.));
+	b = -0.0176 - 0.00002295*(FLOAT_OF_BFP(vsupply_rest,INT32_VREST_FRAC));
+	c = 1.2345 + 0.9958*(FLOAT_OF_BFP(vsupply_rest,INT32_VREST_FRAC));
 
-  attitude_t_from_tcommand(&max_thrust,&max_cmd);
+	rpm_f = (-b - sqrtf(b*b - 4.*a*c))/(2.*a);
+
+	if (rpm_f > 665)
+		rpm_f = 665;
+	else if (rpm_f < 181)
+		rpm_f = 181;
+
+	rpm_2_f = rpm_f*rpm_f;
+
+	rpm_2 = BFP_OF_REAL(rpm_2_f,INT32_PCH_OMEGA_FRAC);
+	rpm = BFP_OF_REAL(rpm_f,INT32_PCH_OMEGA_FRAC);
+	max_thrust = (int32_t)((C_T_2*rpm_2 >> ((INT64_PCH_C_T_FRAC + INT32_PCH_OMEGA_FRAC) - INT32_STAB_ALT_T_FRAC))
+			- (C_T*rpm >> ((INT64_PCH_C_T_FRAC + INT32_PCH_OMEGA_FRAC) - INT32_STAB_ALT_T_FRAC)))
+			+ (C_T_c >> (INT32_PCH_T_FRAC - INT32_STAB_ALT_T_FRAC));
 
 	return max_thrust;
-
 }
 
 
@@ -416,9 +485,12 @@ static void attitude_run_fb(struct Int32Rates *rate_sp, struct Int32NDIAttitudeG
 
 void stabilization_attitude_thrust_run(bool_t motors_on) {
 
-	/*DEBUG REMOVE*/
-	int16_t cmd;
-	cmd = -9600;
+//	/*DEBUG REMOVE*/
+//	int16_t cmd;
+//	cmd = -9600;
+//	float time_f;
+//	float cmd_f;
+//	float hz;
 
 	if (autopilot_mode == AP_MODE_KILL || electrical.bat_critical){
 		thrust_command[0] = 3000;
@@ -430,13 +502,31 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 
 //		/*DEBUG REMOVE - step of 500 every 10 seconds*/
 //		if (time_counter == 0)
+//			start_ticks = sys_time.nb_tick;
+//
+//		time_counter = 1;
+//
+//    ticks = sys_time.nb_tick - start_ticks;
+//    time_f = (float)ticks/(float)sys_time.cpu_ticks_per_sec;
+//    hz = 50000*time_f;
+//    cmd_f = 4800. + 4800.*sinf(hz*time_f*2.*3.14);
+//    cmd = (int16_t)cmd_f;
+//
+//    thrust_command[0] = cmd;
+//    thrust_command[1] = cmd;
+//    thrust_command[2] = cmd;
+//    thrust_command[3] = cmd;
+
+
+//		/*DEBUG REMOVE - step of 500 every 10 seconds*/
+//		if (time_counter == 0)
 //			start_time = sys_time.nb_sec;
 //
 //		time_counter = 1;
 //
 //    step = (sys_time.nb_sec - start_time)/10;
 //
-//    cmd = step*500;
+//    cmd = step*500+9000;
 //
 //    if (step < 20){
 //			thrust_command[0] = cmd;
@@ -466,6 +556,13 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //		step = (sys_time.nb_sec - start_time)/10;
 //
 //		cmd = step*500;
+//
+//    if (step == 0){
+//    	thrust_command[0] = 9600;
+//    	thrust_command[1] = 9600;
+//    	thrust_command[2] = 9600;
+//    	thrust_command[3] = 9600;
+//    }
 //
 //		if (step < 20){
 //			thrust_command[0] = 9500 - cmd;
@@ -498,10 +595,10 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //			if (step == 0 || step == 1 || step == 3 || step == 5 ||
 //					step == 7 || step == 9 || step == 11 || step == 13 ||
 //					step == 15 || step == 17 || step == 19 || step == 21){
-//				thrust_command[0] = -9600;
-//				thrust_command[1] = -9600;
-//				thrust_command[2] = -9600;
-//				thrust_command[3] = -9600;
+//				thrust_command[0] = 0;
+//				thrust_command[1] = 0;
+//				thrust_command[2] = 0;
+//				thrust_command[3] = 0;
 //			}
 //			else if (step < 20){
 //				thrust_command[0] = cmd;
@@ -521,7 +618,7 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //				thrust_command[2] = -9600;
 //				thrust_command[3] = -9600;
 //			}
-
+//
 //		/*DEBUG REMOVE - 7500 to step to 7500, 10 sec per part*/
 //		if (time_counter == 0)
 //			start_time = sys_time.nb_sec;
@@ -552,7 +649,6 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 //			thrust_command[3] = -9600;
 //		}
 
-////
   	thrust_command[0] = attitude_thrust_command.T1;
   	thrust_command[1] = attitude_thrust_command.T2;
   	thrust_command[2] = attitude_thrust_command.T3;
@@ -579,8 +675,8 @@ void stabilization_attitude_thrust_run(bool_t motors_on) {
 
 void stabilization_attitude_run(bool_t enable_integrator) {
 
-	/*DEBUG REMOVE*/
-	enable_integrator = TRUE;
+//	/*DEBUG REMOVE*/
+//	enable_integrator = TRUE;
 
 	/*update pch model with previous thrust setting*/
 	stabilization_pch_update();
@@ -615,13 +711,13 @@ void stabilization_attitude_run(bool_t enable_integrator) {
    * Update reference
    */
 
-  /*DEBUG REMOVE tune attitude*/
-  if (att_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
-	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
-	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
-	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
-	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
-  }
+//  /*DEBUG REMOVE tune attitude*/
+//  if (att_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+//	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
+//	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
+//	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
+//	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
+//  }
 
   stabilization_attitude_ref_update();
 
@@ -739,7 +835,6 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T1 = 0;
   }
 
-  /* limit command values */
   if (attitude_thrust_command.T2 > 9600) {
   	attitude_thrust_command.T2 = 9600;
   }
@@ -747,7 +842,6 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T2 = 0;
   }
 
-  /* limit command values */
   if (attitude_thrust_command.T3 > 9600) {
   	attitude_thrust_command.T3 = 9600;
   }
@@ -755,7 +849,6 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T3 = 0;
   }
 
-  /* limit command values */
   if (attitude_thrust_command.T4 > 9600) {
   	attitude_thrust_command.T4 = 9600;
   }
@@ -763,13 +856,54 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T4 = 0;
   }
 
-    /*DEBUG REMOVE test*/
-    test1 = electrical.vsupply;
-    test2 = thrust_command[0];
-    test3 = thrust_command[1];
-    test4 = thrust_command[2];
-    test5 = thrust_command[3];
-    test6 = 0;
+  /*DEBUG REMOVE test*/
+  test1 = 0;
+  test2 = alt_test2;
+  test3 = alt_test1;
+  test4 = 0;
+  test5 = 0;
+  test6 = 0;
+
+//  int16_t tcomtest;
+//  int32_t ttest;
+//  ttest = BFP_OF_REAL(0.11,INT32_STAB_ALT_T_FRAC);
+//  attitude_tcommand_from_t(&tcomtest,&ttest);
+//
+//	/*DEBUG REMOVE*/
+//  alt_test1 = tcomtest;//FLOAT_OF_BFP(ttest,INT32_STAB_ALT_T_FRAC);
+//
+//  int32_t tdifftest;
+//  int32_t tautest;
+//  tautest = BFP_OF_REAL(0.4,INT32_STAB_ALT_T_FRAC);
+//  attitude_tdiff_from_tau_command(&tdifftest,&tautest);
+//
+//	/*DEBUG REMOVE*/
+//  alt_test1 = FLOAT_OF_BFP(tdifftest,INT32_STAB_ALT_T_FRAC);
+//
+//  /*DEBUG REMOVE test*/
+//  test1 = 0;
+//  test2 = 0;
+//  test3 = alt_test1;
+//  test4 = 0;
+//  test5 = 0;
+//  test6 = 0;
+
+//  /*DEBUG REMOVE test calculate right values out of test1!!!!!!!!!!!*/
+//  test1 = ((attitude_thrust_command.T2 + attitude_thrust_command.T4) - (attitude_thrust_command.T1 + attitude_thrust_command.T3))/2.;
+//  test2 = stateGetBodyRates_f()->r;
+//  test3 = 0;
+//  test4 = 0;
+//  test5 = 0;
+//  test6 = 0;
+
+//
+//    /*DEBUG REMOVE test*/
+//    test1 = electrical.vsupply;
+//    test2 = thrust_command[0];
+//    test3 = thrust_command[1];
+//    test4 = thrust_command[2];
+//    test5 = thrust_command[3];
+//    test6 = 0;
 
 //  /*DEBUG REMOVE test*/
 //  test1 = FLOAT_OF_BFP(altitude_t_avg,INT32_STAB_ALT_T_FRAC);
@@ -814,7 +948,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  /*DEBUG REMOVE pch alt test*/
 //  test1 = 0;
 //  test2 = 0;
-//  test3 = FLOAT_OF_BFP(pch_trans_accel.z,INT32_RATE_FRAC);
+//  test3 = FLOAT_OF_BFP(pch_trans_accel.z,INT32_PCH_F_FRAC);
 //  test4 = FLOAT_OF_BFP(pch_ang_accel.q,INT32_RATE_FRAC);
 //  test5 = FLOAT_OF_BFP(pch_ang_accel.r,INT32_RATE_FRAC);
 //  test6 = alt_test;
@@ -866,8 +1000,8 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
 //  /*DEBUG REMOVE vz tuning */
 //  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
-//	test4 = alt_test;
-//  test1 = 0;
+//	test4 = alt_test1;
+//  test1 = alt_test2;
 //  test2 = 0;
 //  test5 = 0;
 //  test6 = 0;

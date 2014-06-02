@@ -37,7 +37,8 @@
 
 /*REMOVE DEBUG*/
 extern float rate_test;
-extern float alt_test;
+extern float alt_test1;
+extern float alt_test2;
 
 /* Definition of gain structs */
 
@@ -70,7 +71,7 @@ extern void stabilization_attitude_thrust_run(bool_t motors_on);
 extern int16_t thrust_command[4];
 extern void attitude_tcommand_from_t(int16_t *tcom, int32_t *t);
 extern void attitude_t_from_tcommand(int32_t *t, int16_t *tcom);
-extern int32_t getMaxT(void);
+extern int32_t getMaxTavg(void);
 extern void attitude_tdiff_from_tau_command(int32_t *tdiff, int32_t *tau_des);
 
 extern int32_t attitude_t_avg_cmd;
@@ -86,7 +87,9 @@ extern float theta_d_sp;
 extern float psi_d_sp;
 extern float z_sp;
 extern float z_d_sp;
+extern float tdiff_yaw_sp;
 
+extern bool_t tau_step;
 extern bool_t att_sp;
 extern bool_t att_d_sp;
 extern bool_t alt_sp;

@@ -106,11 +106,6 @@ void stabilization_rate_ref_update(void) {
   omega_2_q = BFP_OF_REAL(stab_rate_ref_model.omega.q*stab_rate_ref_model.omega.q,OMEGA_2_Q_RES);
   omega_2_r = BFP_OF_REAL(stab_rate_ref_model.omega.r*stab_rate_ref_model.omega.r,OMEGA_2_R_RES);
 
-//  /*DEBUG REMOVE*/
-//  stab_rate_sp.p = BFP_OF_REAL(2,INT32_RATE_FRAC);
-//  stab_rate_sp.q = BFP_OF_REAL(2,INT32_RATE_FRAC);
-//  stab_rate_sp.r = BFP_OF_REAL(2,INT32_RATE_FRAC);
-
   /* compute reference rate error        */
   struct Int64Rates err; // with RATE_REF_RATE_FRAC
   struct Int64Rates stab_rate_sp_scaled; // with RATE_REF_RATE_FRAC
@@ -160,26 +155,5 @@ void stabilization_rate_ref_update(void) {
   		(stab_rate_ref_accel.q) >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC),
   		(stab_rate_ref_accel.r) >> ( F_UPDATE_RES + RATE_REF_ACCEL_FRAC - RATE_REF_RATE_FRAC)};
   RATES_ADD(stab_rate_ref, delta_rate);
-
-//  /*DEBUG REMOVE*/
-//  rate_test = ((float)(delta_rate.p)/((int64_t)1<<(36)));
-
-//  /* propagate the 2nd order linear model TODO: INT*/
-//  const struct FloatRates jerk_accel_f = {
-//  		FLOAT_OF_BFP(-2.*ZETA_OMEGA_P,ZETA_OMEGA_P_RES) * FLOAT_OF_BFP(stab_rate_ref_accel.p,RATE_REF_ACCEL_FRAC),
-//  		FLOAT_OF_BFP(-2.*ZETA_OMEGA_Q,ZETA_OMEGA_Q_RES) * FLOAT_OF_BFP(stab_rate_ref_accel.q,RATE_REF_ACCEL_FRAC),
-//  		FLOAT_OF_BFP(-2.*ZETA_OMEGA_R,ZETA_OMEGA_R_RES) * FLOAT_OF_BFP(stab_rate_ref_accel.r,RATE_REF_ACCEL_FRAC)};
-//
-//  const struct FloatRates jerk_rate_f = {
-//    FLOAT_OF_BFP(-OMEGA_2_P,OMEGA_2_P_RES) * ((float)(err.p)/((int64_t)1<<(36))),
-//    FLOAT_OF_BFP(-OMEGA_2_Q,OMEGA_2_Q_RES) * ((float)(err.q)/((int64_t)1<<(36))),
-//    FLOAT_OF_BFP(-OMEGA_2_R,OMEGA_2_R_RES) * ((float)(err.r)/((int64_t)1<<(36)))};
-//
-//  struct FloatRates stab_rate_ref_jerk_f;
-//  RATES_SUM(stab_rate_ref_jerk_f, jerk_accel_f, jerk_rate_f);
-//
-//  stab_rate_ref_jerk.p = BFP_OF_REAL(stab_rate_ref_jerk_f.p,RATE_REF_JERK_FRAC);
-//  stab_rate_ref_jerk.q = BFP_OF_REAL(stab_rate_ref_jerk_f.q,RATE_REF_JERK_FRAC);
-//  stab_rate_ref_jerk.r = BFP_OF_REAL(stab_rate_ref_jerk_f.r,RATE_REF_JERK_FRAC);
 
 }

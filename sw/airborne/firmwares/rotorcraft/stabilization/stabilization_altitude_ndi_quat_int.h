@@ -89,14 +89,14 @@ struct IntAltRefModelState {
 };
 
 /* General reference model fracs */
-#define INT64_STAB_ALT_XDD_REF_FRAC 18
-#define INT64_STAB_ALT_XD_REF_FRAC 27
-#define INT64_STAB_ALT_X_REF_FRAC 36
+#define INT64_STAB_ALT_XDD_REF_FRAC 12
+#define INT64_STAB_ALT_XD_REF_FRAC 21
+#define INT64_STAB_ALT_X_REF_FRAC 30
 
 /* Controller fracs */
-#define INT64_STAB_ALT_Z_FRAC 36
-#define INT64_STAB_ALT_ZD_FRAC 27
-#define INT64_STAB_ALT_ZDD_FRAC 18
+#define INT64_STAB_ALT_Z_FRAC 30
+#define INT64_STAB_ALT_ZD_FRAC 21
+#define INT64_STAB_ALT_ZDD_FRAC 12
 
 /* Dynamic inversion fracs */
 #define INT32_STAB_ALT_MASS_FRAC 20

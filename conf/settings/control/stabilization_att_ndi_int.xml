@@ -12,6 +12,8 @@
         <dl_setting var="att_d_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="att d sp" param="STABILIZATION_ATTITUDE_NDI_ATT_D_SP"/>
         <dl_setting var="alt_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="alt sp" param="STABILIZATION_ATTITUDE_NDI_ALT_SP"/>
         <dl_setting var="alt_d_sp" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="alt d sp" param="STABILIZATION_ATTITUDE_NDI_ALT_D_SP"/>
+        <dl_setting var="tau_step" min="0" step="1" max="1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="tau step" param="STABILIZATION_ATTITUDE_NDI_TAU"/>
+        <dl_setting var="tdiff_yaw_sp" min="-2" step="0.1" max="2"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="tdiff sp" param="STABILIZATION_ATTITUDE_NDI_TDIFF_SP"/>
         <dl_setting var="phi_sp" min="-1.5" step="0.01" max="1.5"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="phi sp" param="STABILIZATION_ATTITUDE_NDI_PHI_SP"/>
         <dl_setting var="theta_sp" min="-1.5" step="0.01" max="1.5"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="theta sp" param="STABILIZATION_ATTITUDE_NDI_THETA_SP"/>
         <dl_setting var="psi_sp" min="-1.57" step="0.01" max="1.57"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="psi sp" param="STABILIZATION_ATTITUDE_NDI_PSI_SP"/>

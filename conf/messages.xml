@@ -4,7 +4,10 @@
  <!-- messages from modem or sim to server -->
  <class name="telemetry">
 
-	<!-- control loop test messages DEBUG REMOVE -->
+   <message name="BOOT" id="1">
+     <field name="version" type="uint16"/>
+   </message>
+   
    <message name="CONTROL_TEST" id="215">
      <field name="test1" type="float"/>
      <field name="test2" type="float"/>
@@ -12,10 +15,6 @@
      <field name="test4" type="float"/>
      <field name="test5" type="float"/>
      <field name="test6" type="float"/>
-   </message>
-	
-   <message name="BOOT" id="1">
-     <field name="version" type="uint16"/>
    </message>
 
    <message name="ALIVE" id="2">
@@ -492,15 +491,9 @@
 
   <message name="H_CTL_A" id="60">
     <field name="roll_sum_err" type="float"/>
-    <field name="roll_sp" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
-    <field name="roll_ref" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
-    <field name="phi" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
-    <field name="aileron_sp"  type="int16" unit="pprz"/>
+    <field name="ref_roll_angle" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
     <field name="pitch_sum_err" type="float"/>
-    <field name="pitch_sp" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
-    <field name="pitch_ref" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
-    <field name="theta" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
-    <field name="elevator_sp"  type="int16" unit="pprz"/>
+    <field name="ref_pitch_angle" type="float" unit="rad" alt_unit="deg" alt_unit_coef="57.3"/>
   </message>
 
   <message name="TURB_PRESSURE_RAW" id="61">
@@ -1321,7 +1314,9 @@
     <field name="flight_time"   type="uint16" unit="s"/>
   </message>
 
-  <!-- 148 is free -->
+  <message name="BOOZ2_FMS_INFO" id="148">
+    <field name="tbd"      type="float"/>
+  </message>
 
   <message name="GUIDANCE_H_REF_INT" id="149">
     <field name="sp_x"    type="int32" alt_unit="m"     alt_unit_coef="0.0039063"/>
@@ -1457,6 +1452,7 @@
      <field name="status"   type="uint8" values="OK|LOST|REALLY_LOST"/>
   </message>
 
+  <!-- 161 is free -->
   <message name="VFF_EXTENDED" id="161">
       <field name="measure1"        type="float"/>
       <field name="measure2"        type="float"/>
@@ -1466,6 +1462,7 @@
       <field name="bias"           type="float"/>
       <field name="offset"           type="float"/>
   </message>
+
 
   <message name="VFF" id="162">
       <field name="measure"        type="float"/>
@@ -1477,7 +1474,11 @@
       <field name="Pbb"            type="float"/>
   </message>
 
-  <!-- 163 is free -->
+  <message name="BOOZ2_TUNE_FF" id="163">
+      <field name="fb_rms"         type="float"/>
+      <field name="dg"             type="float"/>
+      <field name="g"              type="float"/>
+  </message>
 
   <message name="HFF" id="164">
       <field name="x"              type="float"/>
@@ -1938,7 +1939,17 @@
     <field name="diff"         type="float"/>
   </message>
 
- <!--222 is free -->
+ <message name="ARDUINO_MEASURMENTS" id="222">
+   <field name="val0" type="uint16"/>
+   <field name="val1" type="uint16"/>
+   <field name="val2" type="uint16"/>
+   <field name="val3" type="uint16"/>
+   <field name="val4" type="uint16"/>
+   <field name="val5" type="uint16"/>
+   <field name="val6" type="uint16"/>
+   <field name="val7" type="uint16"/>
+ </message>
+
  <!--223 is free -->
  <!--224 is free -->
  <!--225 is free -->
@@ -1978,11 +1989,11 @@
     <field name="rc_status"    type="uint8" values="OK|LOST|REALLY_LOST"/>
     <field name="frame_rate"   type="uint8" unit="Hz"/>
     <field name="gps_status"   type="uint8" values="NO_FIX|NA|NA|3Dfix"/>
-    <field name="ap_mode"      type="uint8" values="KILL|FAILSAFE|HOME|RATE_DIRECT|ATTITUDE_DIRECT|RATE_RC_CLIMB|ATTITUDE_RC_CLIMB|ATTITUDE_CLIMB|RATE_Z_HOLD|ATTITUDE_Z_HOLD|HOVER_DIRECT|HOVER_CLIMB|HOVER_Z_HOLD|NAV|RC_DIRECT|CARE_FREE|FW|NAV_NDI|ATTITUDE_Z_HOLD_NDI"/>
+    <field name="ap_mode"      type="uint8" values="KILL|FAILSAFE|HOME|RATE_DIRECT|ATTITUDE_DIRECT|RATE_RC_CLIMB|ATTITUDE_RC_CLIMB|ATTITUDE_CLIMB|RATE_Z_HOLD|ATTITUDE_Z_HOLD|HOVER_DIRECT|HOVER_CLIMB|HOVER_Z_HOLD|NAV|RC_DIRECT|CARE_FREE"/>
     <field name="ap_in_flight" type="uint8" values="ON_GROUND|IN_FLIGHT"/>
     <field name="ap_motors_on" type="uint8" values="MOTORS_OFF|MOTORS_ON"/>
     <field name="ap_h_mode"    type="uint8" values="KILL|RATE|ATTITUDE|HOVER|NAV|CF"/>
-    <field name="ap_v_mode"    type="uint8" values="KILL|RC_DIRECT|RC_CLIMB|CLIMB|HOVER|NAV|NAV_NDI|HOVER_NDI"/>
+    <field name="ap_v_mode"    type="uint8" values="KILL|RC_DIRECT|RC_CLIMB|CLIMB|HOVER|NAV"/>
     <field name="vsupply"      type="uint16" unit="decivolt"/>
     <field name="cpu_time"     type="uint16" unit="s"/>
   </message>
@@ -2080,8 +2091,13 @@
     <field name="vz"   type="float" unit="m/s"/>
   </message>
 
-  <!-- 245 is free -->
-  <!-- 246 is free -->
+  <message name="BOOZ_DEBUG_FOO" id="245">
+    <field name="ami_stat"   type="uint8"/>
+  </message>
+
+  <message name="BOOZ_MAX1167_ERR" id="246">
+    <field name="erno"   type="uint8"/>
+  </message>
 
   <message name="PPRZ_DEBUG" id="247">
     <field name="module"   type="uint8"/>
@@ -2140,8 +2156,20 @@
       <field name="yaw_c"  type="float"/>
   </message>
 
-  <!-- 251 is free -->
-  <!-- 252 is free -->
+  <message name="BOOZ_ATT_REF_MODEL" id="251">
+    <field name="omega_p" type="float" />
+    <field name="zeta_p" type="float" />
+    <field name="omega_q" type="float" />
+    <field name="zeta_q" type="float" />
+    <field name="omega_r" type="float" />
+    <field name="zeta_r" type="float" />
+  </message>
+
+  <message name="BOOZ2_FF_ADAP" id="252">
+     <field name="roll" type="float"/>
+     <field name="pitch" type="float"/>
+     <field name="yaw" type="float"/>
+  </message>
 
   <message name="I2C_ERRORS" id="253">
     <field name="queue_full_cnt"              type="uint16"/>

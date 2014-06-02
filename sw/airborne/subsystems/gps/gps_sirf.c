@@ -90,7 +90,7 @@ void sirf_parse_char(uint8_t c) {
   gps_sirf.read_state = UNINIT;
 }
 
-int start_time = 0;
+int start_ticks = 0;
 int ticks = 0;
 int start_time2 = 0;
 int ticks2 = 0;
@@ -156,11 +156,11 @@ void sirf_parse_2(void) {
   if(gps.fix == GPS_FIX_3D) {
     ticks++;
 #if DEBUG_SIRF
-    printf("GPS %i %i %i %i\n", ticks, (sys_time.nb_sec - start_time), ticks2, (sys_time.nb_sec - start_time2));
+    printf("GPS %i %i %i %i\n", ticks, (sys_time.nb_sec - start_ticks), ticks2, (sys_time.nb_sec - start_time2));
 #endif
   }
   else if(sys_time.nb_sec - gps.last_3dfix_time > 10) {
-    start_time = sys_time.nb_sec;
+    start_ticks = sys_time.nb_sec;
     ticks = 0;
   }
 

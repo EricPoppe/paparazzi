@@ -37,7 +37,8 @@
 #include <stdlib.h>
 
 /*DEBUG REMOVE*/
-float alt_test;
+float alt_test1;
+float alt_test2;
 //float z_sp;
 //float z_d_sp;
 //bool_t alt_sp;
@@ -323,7 +324,9 @@ static void altitude_calc_mass(void){
   int16_t thrust_cmd = (int16_t)(9.81/FLOAT_OF_BFP(inv_m,GV_ADAPT_X_FRAC));
   attitude_t_from_tcommand(&thrust,&thrust_cmd);
 
-  mass = ((int32_t)(thrust*4/9.80665)) << (INT32_STAB_ALT_MASS_FRAC - INT32_STAB_ALT_T_FRAC);
+  mass = ((int32_t)(thrust*4./9.80665)) << (INT32_STAB_ALT_MASS_FRAC - INT32_STAB_ALT_T_FRAC);
+
+  alt_test1 = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC);
 
 //  /*DEBUG REMOVE altitude tuning fix mass*/
 //  mass = BFP_OF_REAL(0.43,INT32_STAB_ALT_MASS_FRAC);
@@ -428,17 +431,17 @@ static void altitude_run_small_inner(bool_t enable_integrator){
   /* sum fb and ff */
   small_zdd_sp = small_zdd_fb + small_zdd_ff;
 
+  /*find tavg*/
   int64_t g_m_zdd_small; // with INT64_STAB_ALT_ZDD_FRAC
   g_m_zdd_small = BFP_OF_REAL(9.80665, INT64_STAB_ALT_ZDD_FRAC) - (small_zdd_sp);
 
-  /*TODO: base on commanded thrust tilt angle??, DIVISION IN INT */
   int64_t Ktilt; // tilt correction for vertical thrust based on state, with INT64_STAB_ALT_ZDD_FRAC
   Ktilt = ((((int64_t)1)*(1<<(2*15)))/
   		((int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qi,stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC) -
   				(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qx,stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC) -
   				(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qy,stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC) +
 					(int64_t)INT_MULT_RSHIFT(stateGetNedToBodyQuat_i()->qz,stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC)))
-					<< (INT64_STAB_ALT_ZDD_FRAC - INT32_QUAT_FRAC);
+					>> (INT32_QUAT_FRAC - INT64_STAB_ALT_ZDD_FRAC);
 
 	small_tavg = (int32_t)(((INT_MULT_RSHIFT(g_m_zdd_small,Ktilt,INT64_STAB_ALT_ZDD_FRAC)*mass) >> (INT32_STAB_ALT_MASS_FRAC + INT64_STAB_ALT_ZDD_FRAC - INT32_STAB_ALT_T_FRAC))/4);
 
@@ -446,8 +449,8 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 	if (small_tavg < 0){
 		small_tavg = 0;
 	}
-	else if (small_tavg > getMaxT()){
-		small_tavg = getMaxT();
+	else if (small_tavg > getMaxTavg()){
+		small_tavg = getMaxTavg();
 	}
 
 	/* small angle controller desired tilt angle is equal to reference tilt angle */
@@ -467,7 +470,6 @@ static void altitude_run_small_inner(bool_t enable_integrator){
 static void altitude_run_large_inner(bool_t enable_integrator){
 
 	/* thrust setting based on attitude reference tilt angle TODO: INT COS and ACOS */
-
 	float large_alpha_ref_f;
 	float large_tavg_arg_acos_f;
 	float large_tavg_f;
@@ -475,11 +477,12 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	large_alpha_ref_f = acosf(QUAT1_FLOAT_OF_BFP(QUAT1_FLOAT_OF_BFP(large_tavg_arg_acos_f)));
 
 	if (cosf(large_alpha_ref_f) == 0){
-		large_tavg = getMaxT();
+		large_tavg = getMaxTavg();
 	  large_tavg_f = FLOAT_OF_BFP(large_tavg,INT32_STAB_ALT_T_FRAC);
 	}
 	else {
-		large_tavg_f = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC)*9.80665/(cosf(large_alpha_ref_f)*4)*1.5;
+		/*calculate tavg based on desired tilt angle, add correction for thrust reduction with speed (0.25*desired tilt angle)*/
+		large_tavg_f = (FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC))*9.80665/(cosf(large_alpha_ref_f)*4.) + 0.25*large_alpha_ref_f/4.;
 		large_tavg = BFP_OF_REAL(large_tavg_f,INT32_STAB_ALT_T_FRAC);
 	}
 
@@ -487,38 +490,13 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	if (large_tavg < 0){
 		large_tavg = 0;
 	}
-	else if (large_tavg > getMaxT()){
-		large_tavg = getMaxT();
+	else if (large_tavg > getMaxTavg()){
+		large_tavg = getMaxTavg();
 	}
 
 	/* calculate error, integrated error, error derivative */
 	int64_t large_inner_zd_err; // with INT64_STAB_ALT_ZDD_FRAC
 	large_inner_zd_err = (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC)) - (((int64_t)(stateGetSpeedNed_i()->z) >> (INT32_SPEED_FRAC - INT64_STAB_ALT_ZDD_FRAC)));
-
-//	/* DEBUG REMOVE - test vertical velocity body frame vs earth frame  */
-//	float vertical_velocity_f;
-//
-//	int64_t q1q3_2mq0q2_2 = stateGetNedToBodyQuat_i()->qx*stateGetNedToBodyQuat_i()->qz
-//			- stateGetNedToBodyQuat_i()->qi*stateGetNedToBodyQuat_i()->qy;
-//
-//	int64_t q2q3_2pq0q1_2 = stateGetNedToBodyQuat_i()->qy*stateGetNedToBodyQuat_i()->qz
-//			+ stateGetNedToBodyQuat_i()->qi*stateGetNedToBodyQuat_i()->qx;
-//
-//	int64_t q0_2mq1_2mq2_2pq3_2 = stateGetNedToBodyQuat_i()->qi*stateGetNedToBodyQuat_i()->qi
-//			- stateGetNedToBodyQuat_i()->qx*stateGetNedToBodyQuat_i()->qx
-//			- stateGetNedToBodyQuat_i()->qy*stateGetNedToBodyQuat_i()->qy
-//			+ stateGetNedToBodyQuat_i()->qz*stateGetNedToBodyQuat_i()->qz;
-//
-//	vertical_velocity_f = FLOAT_OF_BFP((
-//			INT_MULT_RSHIFT(q1q3_2mq0q2_2,(int64_t)stateGetSpeedNed_i()->x,INT32_SPEED_FRAC)
-//			+ INT_MULT_RSHIFT(q2q3_2pq0q1_2,(int64_t)stateGetSpeedNed_i()->y,INT32_SPEED_FRAC)
-//			+ INT_MULT_RSHIFT(q0_2mq1_2mq2_2pq3_2,(int64_t)stateGetSpeedNed_i()->z,INT32_SPEED_FRAC)),
-//			2*INT32_QUAT_FRAC);
-//
-//	int64_t vertical_velocity_i = BFP_OF_REAL(vertical_velocity_f,INT32_SPEED_FRAC);
-//
-//	int64_t large_inner_zd_err; // with INT64_STAB_ALT_ZDD_FRAC
-//	large_inner_zd_err = (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_ZDD_FRAC)) - ((vertical_velocity_i >> (INT32_SPEED_FRAC - INT64_STAB_ALT_ZDD_FRAC)));
 
 	if (enable_integrator && (FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) > QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW))
 		large_zd_sum_err += large_inner_zd_err >> (F_UPDATE_RES);
@@ -544,10 +522,10 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 	large_zdd_sp = large_zdd_fb + large_zdd_ff;
 
 	/* invert sign and add gravity */
-  int64_t g_m_zdd_large; // with INT64_STAB_ALT_ZDD_FRAC
+  int64_t g_m_zdd_large; // with INT64_STAB_ALT_ZDD_FRAC in negative z earth direction!
   g_m_zdd_large = BFP_OF_REAL(9.80665,INT64_STAB_ALT_ZDD_FRAC) - large_zdd_sp;
 
-	/* calculate large angle controller desired tilt angle based on previous average thrust and zdd sp TODO: INT ACOS */
+	/* calculate large angle controller desired tilt angle based commanded average thrust and desired zdd sp TODO: INT ACOS */
   float large_alpha_f;
   float g_m_zdd_large_f;
   float mass_f;
@@ -621,11 +599,14 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 		large_zd_sp = ((-z_d_sp)*((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
 	}
 
+//	/*DEBUG REMOVE*/
+//	alt_test1 = ((float)(large_zd_sp)/((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
+
 	/*find PCH correction v_h vert. vel.*/
 	int64_t small_v_h_zd; // INT64_STAB_ALT_XD_REF_FRAC
 	int64_t large_v_h_zd; // INT64_STAB_ALT_XD_REF_FRAC
-	small_v_h_zd = (small_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_RATE_FRAC));
-	large_v_h_zd = (large_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_RATE_FRAC));
+	small_v_h_zd = (small_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_PCH_F_FRAC));
+	large_v_h_zd = (large_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_PCH_F_FRAC));
 
 	/* run vertical velocity reference models */
   int64_t small_zd_sp_ref_scale; //setpoint in reference model frac, with INT64_STAB_ALT_X_REF_FRAC
@@ -636,8 +617,8 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 	stabilization_altitude_update_ref(&small_zd_sp_ref_scale, &small_inner_ref_model, &small_inner_ref_model_state, &small_v_h_zd);
 	stabilization_altitude_update_ref(&large_zd_sp_ref_scale, &large_inner_ref_model, &large_inner_ref_model_state, &large_v_h_zd);
 
-	/*DEBUG REMOVE*/
-	alt_test = ((float)(small_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(36)));
+//	/*DEBUG REMOVE*/
+//	alt_test2 = ((float)(large_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(36)));
 
 	/* calculate mass */
 	altitude_calc_mass();
@@ -664,14 +645,14 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 
 	}
 	else {
-		alpha_des = 1/(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
+		alpha_des = 1./(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
 				(FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*large_alpha +
-				1/(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
+				1./(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
 				(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC))*small_alpha;
 
-		altitude_t_avg = 1/(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
+		altitude_t_avg = 1./(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
 				(FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC) - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*large_tavg +
-				1/(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
+				1./(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
 				(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC))*small_tavg;
 	}
 

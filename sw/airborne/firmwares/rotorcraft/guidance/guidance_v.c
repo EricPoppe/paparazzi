@@ -204,7 +204,7 @@ void guidance_v_mode_changed(uint8_t new_mode) {
   switch (new_mode) {
   case GUIDANCE_V_MODE_HOVER:
   case GUIDANCE_V_MODE_HOVER_NDI:
-    guidance_v_z_sp = BFP_OF_REAL(-1,INT32_POS_FRAC); // <<DEBUG REMOVE stateGetPositionNed_i()->z; // set current altitude as setpoint
+    guidance_v_z_sp = BFP_OF_REAL(-4,INT32_POS_FRAC); // <<DEBUG REMOVE stateGetPositionNed_i()->z; // set current altitude as setpoint
     guidance_v_z_sum_err = 0;
     GuidanceVSetRef(stateGetPositionNed_i()->z, 0, 0);
     break;

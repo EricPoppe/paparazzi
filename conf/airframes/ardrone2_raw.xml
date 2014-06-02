@@ -28,6 +28,7 @@
 
   <modules main_freq="512">
     <load name="gps_ubx_ucenter.xml"/>
+    <!--load name="Arduino2Ardrone2.xml"/-->
     <load name="send_imu_mag_current.xml"/>
     <!--  load name="../../sw/ext/ardrone2_vision/modules/Mjpeg/ViewVideo.xml"/-->
   </modules>
@@ -216,7 +217,7 @@
     <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
     <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
     <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
-    <define name="MODE_AUTO2" value="AP_MODE_NAV"/>
+    <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_Z_HOLD"/>
   </section>
 
   <section name="BAT">

@@ -271,7 +271,7 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   stab_rate_ref_ff_scaled.q = (int32_t)(stab_rate_ref_ff.q >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
   stab_rate_ref_ff_scaled.r = (int32_t)(stab_rate_ref_ff.r >> (RATE_REF_ACCEL_FRAC - VIRTUAL_INPUT_FRAC));
 
-  struct Int32Rates rate_ref_ff_body;
+  struct Int32Rates rate_ref_ff_body; // with VIRTUAL_INPUT_FRAC
   int32_t cpsi, spsi;
   cpsi = TRIG_BFP_OF_REAL(cosf(psi_f));
   spsi = TRIG_BFP_OF_REAL(sinf(psi_f));
