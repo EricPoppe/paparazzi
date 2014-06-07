@@ -61,7 +61,7 @@
 #define OMEGA_2_R_RES 7
 //#define OMEGA_2_R    BFP_OF_REAL((OMEGA_R*OMEGA_R), OMEGA_2_R_RES)
 
-struct Int32Rates  stab_rate_sp;          //< with INT32_RATE_FRAC
+struct Int64Rates  stab_rate_sp;          //< with INT32_RATE_FRAC
 struct Int64Rates  stab_rate_ref;         //< with RATE_REF_RATE_FRAC
 struct Int64Rates  stab_rate_ref_accel;   //< with RATE_REF_ACCEL_FRAC
 struct Int64Rates  stab_rate_ref_jerk;    //< with RATE_REF_JERK_FRAC
@@ -109,9 +109,9 @@ void stabilization_rate_ref_update(void) {
   /* compute reference rate error        */
   struct Int64Rates err; // with RATE_REF_RATE_FRAC
   struct Int64Rates stab_rate_sp_scaled; // with RATE_REF_RATE_FRAC
-  stab_rate_sp_scaled.p = ((int64_t)stab_rate_sp.p) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
-  stab_rate_sp_scaled.q = ((int64_t)stab_rate_sp.q) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
-  stab_rate_sp_scaled.r = ((int64_t)stab_rate_sp.r) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
+  stab_rate_sp_scaled.p = (stab_rate_sp.p) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
+  stab_rate_sp_scaled.q = (stab_rate_sp.q) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
+  stab_rate_sp_scaled.r = (stab_rate_sp.r) << (RATE_REF_RATE_FRAC - INT32_RATE_FRAC);
   RATES_DIFF(err, stab_rate_sp_scaled, stab_rate_ref);
 
   /* propagate the 2nd order linear model*/

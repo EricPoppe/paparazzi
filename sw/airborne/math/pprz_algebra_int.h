@@ -101,10 +101,10 @@ struct Int32Quat {
 
 
 struct Int64Quat {
-  int32_t qi;
-  int32_t qx;
-  int32_t qy;
-  int32_t qz;
+  int64_t qi;
+  int64_t qx;
+  int64_t qy;
+  int64_t qz;
 };
 
 

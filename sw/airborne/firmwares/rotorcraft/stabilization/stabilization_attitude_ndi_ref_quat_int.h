@@ -37,8 +37,20 @@ struct Int32RefModel {
 	struct Int32Rates zeta;
 };
 
+struct FloatRatesNDI {
+  float p; ///< in rad/s^2
+  float q; ///< in rad/s^2
+  float r; ///< in rad/s^2
+};
+
+struct FloatRefModelNDI {
+  struct FloatRatesNDI omega;
+  struct FloatRatesNDI zeta;
+};
+
 extern struct Int32Quat   stab_att_ndi_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Quat   stab_att_ref_quat;  ///< with #INT32_QUAT_FRAC
+struct FloatRefModelNDI stab_att_ref_model;
 
 void stabilization_attitude_ref_enter(void);
 

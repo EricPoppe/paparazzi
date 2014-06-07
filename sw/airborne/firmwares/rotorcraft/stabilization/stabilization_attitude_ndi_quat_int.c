@@ -55,6 +55,19 @@ float test3;
 float test4;
 float test5;
 float test6;
+float test7;
+float test8;
+float test9;
+float test10;
+float test11;
+float test12;
+float test13;
+float test14;
+float test15;
+float test16;
+float test17;
+float test18;
+float test19;
 bool_t stabilization_override_on = STABILIZATION_ATTITUDE_NDI_OVERRIDE_ON;
 float phi_sp = STABILIZATION_ATTITUDE_NDI_PHI_SP;
 float theta_sp = STABILIZATION_ATTITUDE_NDI_THETA_SP;
@@ -99,6 +112,9 @@ struct Int32Eulers stabilization_att_sum_err;
 struct Int16Thrust attitude_thrust_command; // thrust command calculated by controller, limited by PPRZ_MAX
 struct Int32Thrust attitude_thrust; // with INT32_STAB_ALT_T_FRAC
 int16_t thrust_command[4]; // thrust command send to engines
+struct Int32Rates  stab_rate_sp_fb;          //< with INT32_RATE_FRAC
+struct Int32Rates  stab_rate_sp_ff;          //< with INT32_RATE_FRAC
+struct Int32Rates  v_h_att; // with INT32_RATE_FRAC
 
 /*thrust and rpm constants int and float*/
 float c_rpm_f 		= 181.47;
@@ -189,7 +205,20 @@ static void send_control_test(void) {
                                       &test3,
                                       &test4,
                                       &test5,
-                                      &test6
+                                      &test6,
+                                      &test7,
+                                      &test8,
+                                      &test9,
+                                      &test10,
+                                      &test11,
+                                      &test12,
+                                      &test13,
+                                      &test14,
+                                      &test15,
+                                      &test16,
+                                      &test17,
+                                      &test18,
+                                      &test19
                                       );
 }
 
@@ -405,8 +434,8 @@ static void attitude_limit_t(void){
 
 /* estimate the voltage level if batt in rest TODO:INT*/
 static void attitude_calc_vrest(void){
-	int64_t c_cmd_2 = ((0.00000000815)*((int64_t)1<<(INT64_C_BAT_FRAC))); // with INT64_C_BAT_FRAC
-	int64_t c_cmd = ((0.0000012)*((int64_t)1<<(INT64_C_BAT_FRAC))); // with INT64_C_BAT_FRAC
+	int64_t c_cmd_2 = ((0.0000000083)*((int64_t)1<<(INT64_C_BAT_FRAC))); // with INT64_C_BAT_FRAC
+	int64_t c_cmd = ((0.00000106)*((int64_t)1<<(INT64_C_BAT_FRAC))); // with INT64_C_BAT_FRAC
 
 	vsupply_rest = ((((c_cmd_2*((int64_t)attitude_t_avg_cmd*(int64_t)attitude_t_avg_cmd)) >> (INT64_C_BAT_FRAC - INT32_VREST_FRAC))
 			+ BFP_OF_REAL(electrical.vsupply,INT32_VREST_FRAC)/10) << INT32_VREST_FRAC)
@@ -434,7 +463,10 @@ int32_t getMaxTavg(void){
 	b = -0.0176 - 0.00002295*(FLOAT_OF_BFP(vsupply_rest,INT32_VREST_FRAC));
 	c = 1.2345 + 0.9958*(FLOAT_OF_BFP(vsupply_rest,INT32_VREST_FRAC));
 
-	rpm_f = (-b - sqrtf(b*b - 4.*a*c))/(2.*a);
+	if ((b*b - 4.*a*c) > 0)
+		rpm_f = (-b - sqrtf(b*b - 4.*a*c))/(2.*a);
+	else
+		rpm_f = 181;
 
 	if (rpm_f > 665)
 		rpm_f = 665;
@@ -450,6 +482,16 @@ int32_t getMaxTavg(void){
 			+ (C_T_c >> (INT32_PCH_T_FRAC - INT32_STAB_ALT_T_FRAC));
 
 	return max_thrust;
+}
+
+static void attitude_run_ff(struct Int32Rates *rate_sp, struct Int32Rates *ref_rate)
+{
+
+  /* Compute feedforward based on reference acceleration */
+	rate_sp->p = ref_rate->p;
+	rate_sp->q = ref_rate->q;
+	rate_sp->r = ref_rate->r;
+
 }
 
 
@@ -713,11 +755,21 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
 //  /*DEBUG REMOVE tune attitude*/
 //  if (att_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
-//	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*cosf(psi_sp/2) + sinf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2));
-//	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2)*sinf(theta_sp/2)*sinf(psi_sp/2) + cosf(theta_sp/2)*cosf(psi_sp/2)*sinf(phi_sp/2));
-//	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2) + sinf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2));
-//	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2)*cosf(theta_sp/2)*sinf(psi_sp/2) - sinf(phi_sp/2)*cosf(psi_sp/2)*sinf(theta_sp/2));
+//	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2.)*cosf(theta_sp/2.)*cosf(psi_sp/2.) + sinf(phi_sp/2.)*sinf(theta_sp/2.)*sinf(psi_sp/2.));
+//	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2.)*sinf(theta_sp/2.)*sinf(psi_sp/2.) + cosf(theta_sp/2.)*cosf(psi_sp/2.)*sinf(phi_sp/2.));
+//	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2.)*cosf(psi_sp/2.)*sinf(theta_sp/2.) + sinf(phi_sp/2.)*cosf(theta_sp/2.)*sinf(psi_sp/2.));
+//	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2.)*cosf(theta_sp/2.)*sinf(psi_sp/2.) - sinf(phi_sp/2.)*cosf(psi_sp/2.)*sinf(theta_sp/2.));
 //  }
+
+	/* calculate PCH correction v_h_att based on previous desired rate and rate ref model rate (which is corrected by PCH)*/
+  struct Int32Rates rate_ref_scaled_vh; // INT32_RATE_FRAC
+  rate_ref_scaled_vh.p = (int32_t)(stab_rate_ref.p >> (RATE_REF_RATE_FRAC - INT32_RATE_FRAC));
+  rate_ref_scaled_vh.q = (int32_t)(stab_rate_ref.q >> (RATE_REF_RATE_FRAC - INT32_RATE_FRAC));
+  rate_ref_scaled_vh.r = (int32_t)(stab_rate_ref.r >> (RATE_REF_RATE_FRAC - INT32_RATE_FRAC));
+
+  v_h_att.p = 0;//stab_rate_sp.p - rate_ref_scaled_vh.p;
+  v_h_att.q = 0;//stab_rate_sp.q - rate_ref_scaled_vh.q;
+  v_h_att.r = 0;//stab_rate_sp.r - rate_ref_scaled_vh.r;
 
   stabilization_attitude_ref_update();
 
@@ -804,7 +856,27 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   RATES_DIFF(rate_err, rate_ref_body, (*body_rate));
 
   /* compute the feed back command */
-  attitude_run_fb(&stab_rate_sp, &attitude_ndi_gains, &alpha, &beta, &psi, &rate_err);
+  attitude_run_fb(&stab_rate_sp_fb, &attitude_ndi_gains, &alpha, &beta, &psi, &rate_err);
+
+  /*compute feed forward command*/
+  struct Int32Rates stab_att_ref_ff_body;
+  stab_att_ref_ff_body.p = (int32_t)(((((int64_t)stab_att_ref_ff.p)*((int64_t)cpsi)) >> INT32_TRIG_FRAC) + ((((int64_t)stab_att_ref_ff.q)*((int64_t)spsi)) >> INT32_TRIG_FRAC));
+  stab_att_ref_ff_body.q = (int32_t)(((((int64_t)stab_att_ref_ff.q)*((int64_t)cpsi)) >> INT32_TRIG_FRAC) - ((((int64_t)stab_att_ref_ff.p)*((int64_t)spsi)) >> INT32_TRIG_FRAC));//(int32_t)(INT_MULT_RSHIFT((int64_t)stab_att_ref_ff.q,(int64_t)cpsi,INT32_TRIG_FRAC) - INT_MULT_RSHIFT((int64_t)stab_att_ref_ff.p,(int64_t)spsi,INT32_TRIG_FRAC));
+  stab_att_ref_ff_body.r = stab_att_ref_ff.r;
+
+  attitude_run_ff(&stab_rate_sp_ff,&stab_att_ref_ff_body);
+
+//  /*DEBUG REMOVE*/
+//  stab_rate_sp_ff.p = 0;
+//  stab_rate_sp_ff.q = 0;
+//  stab_rate_sp_ff.r = 0;
+
+//  /*DEBUG REMOVE*/
+//  alt_test1 = FLOAT_OF_BFP(v_h_att.q,INT32_RATE_FRAC);
+
+  stab_rate_sp.p = stab_rate_sp_ff.p + stab_rate_sp_fb.p;
+  stab_rate_sp.q = stab_rate_sp_ff.q + stab_rate_sp_fb.q;
+  stab_rate_sp.r = stab_rate_sp_ff.r + stab_rate_sp_fb.r;
 
   /* run inner loop rate control, calculates thrust changes for attitude control rate_thrust */
 
@@ -856,13 +928,51 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T4 = 0;
   }
 
-  /*DEBUG REMOVE test*/
-  test1 = 0;
-  test2 = alt_test2;
-  test3 = alt_test1;
-  test4 = 0;
-  test5 = 0;
-  test6 = 0;
+//  /*DEBUG REMOVE data acquisition*/
+//  test1 = alt_test1;
+//  test2 = 0;
+//  test3 = FLOAT_OF_BFP(stab_att_ref_quat.qy,INT32_QUAT_FRAC);
+//  test4 = FLOAT_OF_BFP(stab_att_ref_quat.qz,INT32_QUAT_FRAC);
+//  test5 = FLOAT_OF_BFP(stab_att_sp_quat.qi,INT32_QUAT_FRAC);
+//  test6 = FLOAT_OF_BFP(stab_att_sp_quat.qx,INT32_QUAT_FRAC);
+//  test7 = FLOAT_OF_BFP(stab_att_sp_quat.qy,INT32_QUAT_FRAC);
+//  test8 = FLOAT_OF_BFP(stab_att_sp_quat.qz,INT32_QUAT_FRAC);
+//  test9 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC);
+//  test10 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC);
+//  test11 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC);
+//  test12 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC);
+//  test13 = alt_test1;
+//  test14 = alt_test2;
+//  test15 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
+
+//  /*DEBUG REMOVE data acquisition*/
+//  test1 = FLOAT_OF_BFP(stab_att_ref_quat.qi,INT32_QUAT_FRAC);
+//  test2 = FLOAT_OF_BFP(stab_att_ref_quat.qx,INT32_QUAT_FRAC);
+//  test3 = FLOAT_OF_BFP(stab_att_ref_quat.qy,INT32_QUAT_FRAC);
+//  test4 = FLOAT_OF_BFP(stab_att_ref_quat.qz,INT32_QUAT_FRAC);
+//  test5 = FLOAT_OF_BFP(stab_att_sp_quat.qi,INT32_QUAT_FRAC);
+//  test6 = FLOAT_OF_BFP(stab_att_sp_quat.qx,INT32_QUAT_FRAC);
+//  test7 = FLOAT_OF_BFP(stab_att_sp_quat.qy,INT32_QUAT_FRAC);
+//  test8 = FLOAT_OF_BFP(stab_att_sp_quat.qz,INT32_QUAT_FRAC);
+//  test9 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC);
+//  test10 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC);
+//  test11 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC);
+//  test12 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC);
+//  test13 = alt_test1;
+//  test14 = alt_test2;
+//  test15 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
+//  test16 = thrust_command[0];
+//  test17 = thrust_command[1];
+//  test18 = thrust_command[2];
+//  test19 = thrust_command[3];
+
+//  /*DEBUG REMOVE test*/
+//  test1 = 0;
+//  test2 = alt_test2;
+//  test3 = alt_test1;
+//  test4 = 0;
+//  test5 = 0;
+//  test6 = 0;
 
 //  int16_t tcomtest;
 //  int32_t ttest;
@@ -917,7 +1027,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test1 = FLOAT_OF_BFP(rate_thrust_diff.yaw,INT32_STAB_ALT_T_FRAC);
 //  test2 = ((float)(stab_rate_sp.r)/((int32_t)1<<(INT32_RATE_FRAC)));
 //  test3 = FLOAT_OF_BFP(stateGetBodyRates_i()->r,INT32_RATE_FRAC);
-//  test4 = ((float)(stab_rate_ref.r)/((int64_t)1<<(RATE_REF_RATE_FRAC)));
+//  test4 = ((float)(stab_rate_ref.r)/((int64_t)1<<(30)));
 //  test5 = rate_test;
 //  test6 = FLOAT_OF_BFP(altitude_t_avg,INT32_STAB_ALT_T_FRAC);
 
@@ -925,17 +1035,19 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test1 = FLOAT_OF_BFP(rate_thrust_diff.roll,INT32_STAB_ALT_T_FRAC);
 //  test2 = ((float)(stab_rate_sp.p)/((int32_t)1<<(INT32_RATE_FRAC)));
 //  test3 = FLOAT_OF_BFP(stateGetBodyRates_i()->p,INT32_RATE_FRAC);
-//  test4 = ((float)(stab_rate_ref.p)/((int64_t)1<<(RATE_REF_RATE_FRAC)));
+//  test4 = ((float)(stab_rate_ref.p)/((int64_t)1<<(30)));
 //  test5 = RATE_FLOAT_OF_BFP(stab_rate_sp.p);
 //  test6 = rate_test;
 
-//  /*DEBUG REMOVE tilt q rate tuning*/
-//  test1 = FLOAT_OF_BFP(rate_thrust_diff.pitch,INT32_STAB_ALT_T_FRAC);
-//  test2 = ((float)(stab_rate_sp.q)/((int32_t)1<<(INT32_RATE_FRAC)));
-//  test3 = FLOAT_OF_BFP(stateGetBodyRates_i()->q,INT32_RATE_FRAC);
-//  test4 = ((float)(stab_rate_ref.q)/((int64_t)1<<(RATE_REF_RATE_FRAC)));
-//  test5 = RATE_FLOAT_OF_BFP(stab_rate_sp.q);
-//  test6 = rate_test;
+//  /*DEBUG REMOVE tilt theta and q rate tuning*/
+//  struct Int32Eulers testje;
+//  INT32_EULERS_OF_QUAT(testje,stab_att_ref_quat);
+//  test1 = ((float)(stab_rate_sp.q)/((int32_t)1<<(INT32_RATE_FRAC)));
+//  test2 = FLOAT_OF_BFP(stateGetBodyRates_i()->q,INT32_RATE_FRAC);
+//  test3 = ((float)(stab_rate_ref.q)/((int64_t)1<<(30)));
+//  test4 = (theta_sp);
+//  test5 = ANGLE_FLOAT_OF_BFP(stateGetNedToBodyEulers_i()->theta);
+//  test6 = ANGLE_FLOAT_OF_BFP(testje.theta);
 
 //  /*DEBUG REMOVE pch tilt test*/
 //  test1 = FLOAT_OF_BFP(rate_thrust_diff.roll,INT32_STAB_ALT_T_FRAC);
@@ -957,10 +1069,20 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  struct Int32Eulers testje;
 //  INT32_EULERS_OF_QUAT(testje,stab_att_ref_quat);
 //  test1 = FLOAT_OF_BFP(rate_thrust_diff.pitch,INT32_STAB_ALT_T_FRAC);
-//  test2 = (psi_sp);
+//  test2 = (theta_sp);
 //  test3 = ANGLE_FLOAT_OF_BFP(stateGetNedToBodyEulers_i()->theta);
 //  test4 = ANGLE_FLOAT_OF_BFP(testje.theta);
-//  test5 = 0;
+//  test5 = psi_f;
+//  test6 = 0;
+
+//  /*DEBUG REMOVE yaw tuning*/
+//  struct Int32Eulers testje;
+//  INT32_EULERS_OF_QUAT(testje,stab_att_ref_quat);
+//  test1 = FLOAT_OF_BFP(rate_thrust_diff.yaw,INT32_STAB_ALT_T_FRAC);
+//  test2 = (psi_sp);
+//  test3 = ANGLE_FLOAT_OF_BFP(stateGetNedToBodyEulers_i()->psi);
+//  test4 = ANGLE_FLOAT_OF_BFP(testje.psi);
+//  test5 = psi_f;
 //  test6 = 0;
 
 //  int16_t testje = 2260;
@@ -992,19 +1114,26 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 
 //  /*DEBUG REMOVE altitude tuning */
 //  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
-//	test2 = alt_test;
-//  test3 = 0;
+//	test2 = alt_test1;
+//  test3 = alt_test2;
 //  test4 = 0;
 //  test5 = 0;
 //  test6 = 0;
 
-//  /*DEBUG REMOVE vz tuning */
-//  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
-//	test4 = alt_test1;
-//  test1 = alt_test2;
-//  test2 = 0;
-//  test5 = 0;
-//  test6 = 0;
+  /*DEBUG REMOVE vz tuning */
+  test3 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
+	test4 = alt_test1;
+  test1 = alt_test2;
+  test2 = 0;
+  test5 = 0;
+  test6 = 0;
+
+  /*DEBUG REMOVE tilt tuning*/
+  struct Int32Eulers testje;
+  INT32_EULERS_OF_QUAT(testje,stab_att_ref_quat);
+  test7 = FLOAT_OF_BFP(stab_att_ndi_sp_quat.qy,INT32_QUAT_FRAC);
+  test8 = ANGLE_FLOAT_OF_BFP(stateGetNedToBodyEulers_i()->theta);
+  test9 = ANGLE_FLOAT_OF_BFP(testje.theta);
 
 //  /*DEBUG REMOVE z tuning */
 //  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);

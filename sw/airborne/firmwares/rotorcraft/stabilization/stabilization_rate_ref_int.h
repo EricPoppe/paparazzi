@@ -35,13 +35,13 @@
 #include "math/pprz_algebra_int.h"
 #include "stabilization_attitude_ndi_pch_model.h"
 
-#define RATE_REF_JERK_FRAC 18
-#define RATE_REF_ACCEL_FRAC 27
-#define RATE_REF_RATE_FRAC 36
+#define RATE_REF_JERK_FRAC 12
+#define RATE_REF_ACCEL_FRAC 21
+#define RATE_REF_RATE_FRAC 30
 
 extern struct Int64Rates  stab_rate_ref_accel; ///< with RATE_REF_ACCEL_FRAC
 extern struct Int64Rates  stab_rate_ref_jerk; ///< with RATE_REF_JERK_FRAC
-extern struct Int32Rates  stab_rate_sp;  ///< with INT32_RATE_FRAC
+extern struct Int64Rates  stab_rate_sp;  ///< with INT32_RATE_FRAC
 extern struct Int64Rates  stab_rate_ref;  ///< with RATE_REF_RATE_FRAC
 extern struct Int64Rates  stab_rate_ref_ff; // with RATE_REF_ACCEL_FRAC
 

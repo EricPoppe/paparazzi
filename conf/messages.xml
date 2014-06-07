@@ -15,6 +15,19 @@
      <field name="test4" type="float"/>
      <field name="test5" type="float"/>
      <field name="test6" type="float"/>
+     <field name="test7" type="float"/>
+     <field name="test8" type="float"/>
+     <field name="test9" type="float"/>
+     <field name="test10" type="float"/>
+     <field name="test11" type="float"/>
+     <field name="test12" type="float"/>
+     <field name="test13" type="float"/>
+     <field name="test14" type="float"/>
+     <field name="test15" type="float"/>
+     <field name="test16" type="float"/>
+     <field name="test17" type="float"/>
+     <field name="test18" type="float"/>
+     <field name="test19" type="float"/>
    </message>
 
    <message name="ALIVE" id="2">
