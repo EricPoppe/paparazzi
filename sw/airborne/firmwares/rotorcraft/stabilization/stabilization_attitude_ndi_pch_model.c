@@ -22,6 +22,9 @@
 #include <stdlib.h>
 #include <math.h>
 
+/*DEBUG REMOVE*/
+#include "mcu_periph/sys_time.h"
+
 #define F_UPDATE 9
 #define PCH_ENG_POW_FRAC 40
 #define INT32_STAB_PCH_M_FRAC 20
@@ -89,7 +92,7 @@ void stabilization_pch_update_engine(){
 							- (((int64_t)tau_down_1)*engine_omega[i] >> (2*INT32_PCH_OMEGA_FRAC - INT32_PCH_OMEGA_D_FRAC));
 		}
 		/*integrate*/
-		engine_omega[i] = engine_omega[i] + (omega_d[i] >> (F_UPDATE + INT32_PCH_OMEGA_D_FRAC - INT32_PCH_OMEGA_FRAC));
+		engine_omega[i] = engine_omega[i] + (omega_d[i] >> (F_UPDATE + INT32_PCH_OMEGA_D_FRAC - INT32_PCH_OMEGA_FRAC))*1.4;
 
 		/*limit to max rpm of 665 and min of 180*/
 		if (engine_omega[i] > BFP_OF_REAL(665,INT32_PCH_OMEGA_FRAC)){
@@ -231,11 +234,22 @@ void stabilization_pch_update(){
 	else
 		pch_cmd[3] = 3471 + thrust_command[3];
 
+////	/*DEBUG REMOVE*/
+////	uint32_t time;
+//	int32_t cmd;
+////
+////	time = sys_time.nb_sec;
+////
+////	if ((time > 30) && (time <= 40))
+//		cmd = 1000;
+////	else
+////		cmd = 0;
+//
 //	/*DEBUG REMOVE*/
-//	pch_cmd[0] = 3471+6428;
-//	pch_cmd[1] = 3471+6428;
-//	pch_cmd[2] = 3471+6428;
-//	pch_cmd[3] = 3471+6428;
+//	pch_cmd[0] = 3471+7208;
+//	pch_cmd[1] = 3471+7208;
+//	pch_cmd[2] = 3471+5267;
+//	pch_cmd[3] = 3471+5267;
 
 	/*update engine speed*/
 	stabilization_pch_update_engine();
@@ -245,6 +259,9 @@ void stabilization_pch_update(){
 
 	/*calculate body accelerations*/
 	stabilization_pch_body_accel();
+
+//	alt_test1 = FLOAT_OF_BFP(pch_trans_accel.z,INT32_PCH_F_FRAC);
+//	alt_test2 = FLOAT_OF_BFP(pch_ang_accel.q,INT32_RATE_FRAC);
 
 }
 

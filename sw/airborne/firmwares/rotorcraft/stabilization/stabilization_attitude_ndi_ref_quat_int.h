@@ -50,7 +50,11 @@ struct FloatRefModelNDI {
 
 extern struct Int32Quat   stab_att_ndi_sp_quat;  ///< with #INT32_QUAT_FRAC
 extern struct Int32Quat   stab_att_ref_quat;  ///< with #INT32_QUAT_FRAC
-struct FloatRefModelNDI stab_att_ref_model;
+extern struct FloatRefModelNDI stab_att_ref_model_ndi;
+
+#define INT64_ATT_REF_QUAT_FRAC 30
+#define INT64_ATT_REF_RATE_FRAC 21
+#define INT64_ATT_REF_ACCEL_FRAC 12
 
 void stabilization_attitude_ref_enter(void);
 

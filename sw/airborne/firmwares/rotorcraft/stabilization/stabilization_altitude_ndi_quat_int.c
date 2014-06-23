@@ -39,6 +39,9 @@
 /*DEBUG REMOVE*/
 float alt_test1;
 float alt_test2;
+float alt_test3;
+float alt_test4;
+float alt_test5;
 //float z_sp;
 //float z_d_sp;
 //bool_t alt_sp;
@@ -273,7 +276,7 @@ static void stabilization_altitude_update_ref(int64_t *x_sp, struct FloatAltRefM
 	/*set feedforward term*/
 	ref_model_state->stab_alt_ff_ref = ref_model_state->stab_alt_xd_ref;
 
-	/*subtract pch v_h*/
+	/*subtract pch v_h DEBUG USE PCH*/
 	ref_model_state->stab_alt_xd_ref = ref_model_state->stab_alt_xd_ref - *v_h;
 
 	/* integrate xd */
@@ -283,7 +286,7 @@ static void stabilization_altitude_update_ref(int64_t *x_sp, struct FloatAltRefM
 
 }
 
-/* feedforward function */
+/* feedforward function inner loop*/
 static void altitude_run_inner_ff(int64_t *inner_zdd_ff, struct IntAltRefModelState *inner_ref_model_state, struct Int32NDIAltitudeGains *gains)
 {
 	/* Compute feedforward based on reference acceleration */
@@ -291,6 +294,7 @@ static void altitude_run_inner_ff(int64_t *inner_zdd_ff, struct IntAltRefModelSt
 
 }
 
+/* feedforward function outer loop*/
 static void altitude_run_outer_ff(int64_t *outer_zd_ff, struct IntAltRefModelState *outer_ref_model_state, struct Int32NDIAltitudeGains *gains)
 {
 	/* Compute feedforward based on reference acceleration */
@@ -298,7 +302,7 @@ static void altitude_run_outer_ff(int64_t *outer_zd_ff, struct IntAltRefModelSta
 
 }
 
-/* generic PID feedback function */
+/* PID feedback function */
 static void altitude_run_fb(struct Int32NDIAltitudeGains *gains, int64_t *err, int64_t *sum_err, int64_t *der_err, int64_t *input)
 {
 	/*  PID feedback */
@@ -329,7 +333,7 @@ static void altitude_calc_mass(void){
 //
 //  alt_test1 = FLOAT_OF_BFP(mass,INT32_STAB_ALT_MASS_FRAC);
 
-  /*DEBUG REMOVE altitude tuning fix mass*/
+  /*DEBUG REMOVE altitude tuning fixed mass*/
   mass = BFP_OF_REAL(0.45,INT32_STAB_ALT_MASS_FRAC);
 
 }
@@ -368,7 +372,9 @@ static void altitude_run_small_outer(bool_t enable_integrator){
 
 }
 
-/* large angle controller outer loop, controls altitude, calculates desired vertical velocity */
+/*
+ * large angle controller outer loop, controls altitude, calculates desired vertical velocity
+ */
 static void altitude_run_large_outer(bool_t enable_integrator){
 
 	/* calculate error, integrated error, error derivative */
@@ -558,7 +564,6 @@ static void altitude_run_large_inner(bool_t enable_integrator){
 
 }
 
-
 void stabilization_altitude_run(bool_t enable_integrator) {
 
 	/*DEBUG REMOVE*/
@@ -566,14 +571,19 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 		altitude_z_sp = ((-z_sp)*((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
 	}
 
-//	/*DEBUG REMOVE*/
-//	alt_test1 = ((float)(altitude_z_sp)/((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
+	/*DEBUG REMOVE*/
+	alt_test1 = ((float)(altitude_z_sp)/((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
 
 	/*find PCH correction v_h altitude*/
 	int64_t small_v_h_z; // INT64_STAB_ALT_XD_REF_FRAC
 	int64_t large_v_h_z; // INT64_STAB_ALT_XD_REF_FRAC
 	small_v_h_z = (small_zd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (small_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC));
 	large_v_h_z = (large_zd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_ZD_FRAC)) - (large_inner_ref_model_state.stab_alt_x_ref >> (INT64_STAB_ALT_X_REF_FRAC - INT64_STAB_ALT_XD_REF_FRAC));
+
+//	/*DEBUG REMOVE*/
+//	alt_test4 = FLOAT_OF_BFP(large_v_h_z,INT64_STAB_ALT_XD_REF_FRAC);
+////
+////	large_v_h_z = 0;
 
 	/* run altitude reference models */
 	stabilization_altitude_update_ref(&altitude_z_sp, &small_outer_ref_model, &small_outer_ref_model_state,&small_v_h_z);
@@ -606,10 +616,10 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 		large_zd_sp = ((-z_d_sp)*((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
 	}
 
-	/*DEBUG REMOVE*/
-	alt_test1 = ((float)(small_zd_sp)/((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
+//	/*DEBUG REMOVE*/
+//	alt_test1 = ((float)(small_zd_sp)/((int64_t)1<<(INT64_STAB_ALT_ZD_FRAC)));
 
-	/*find PCH correction v_h vert. vel.*/
+	/*find PCH correction v_h vert. vel. DEBUG VH LARGE*/
 	int64_t small_v_h_zd; // INT64_STAB_ALT_XD_REF_FRAC
 	int64_t large_v_h_zd; // INT64_STAB_ALT_XD_REF_FRAC
 	small_v_h_zd = (small_zdd_sp << (INT64_STAB_ALT_XD_REF_FRAC - INT64_STAB_ALT_XDD_REF_FRAC)) - ((int64_t)pch_trans_accel.z << (INT64_STAB_ALT_XD_REF_FRAC - INT32_PCH_F_FRAC));
@@ -624,8 +634,8 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 	stabilization_altitude_update_ref(&small_zd_sp_ref_scale, &small_inner_ref_model, &small_inner_ref_model_state, &small_v_h_zd);
 	stabilization_altitude_update_ref(&large_zd_sp_ref_scale, &large_inner_ref_model, &large_inner_ref_model_state, &large_v_h_zd);
 
-	/*DEBUG REMOVE*/
-	alt_test2 = ((float)(small_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(30)));
+//	/*DEBUG REMOVE*/
+//	alt_test2 = ((float)(small_inner_ref_model_state.stab_alt_x_ref)/((int64_t)1<<(INT64_STAB_ALT_X_REF_FRAC)));
 
 	/* calculate mass */
 	altitude_calc_mass();
@@ -661,9 +671,6 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 				1./(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - QUAT_FLIGHT_MODE_TRANSITION_LIMIT_LOW)*
 				(QUAT_FLIGHT_MODE_TRANSITION_LIMIT_HIGH - FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC))*small_tavg);
 	}
-
-//	/*debug remove*/
-//	alt_test1 = FLOAT_OF_BFP(small_alpha, INT32_ANGLE_FRAC);
 
 	/*Limit thrust to joystick throttle*/
 	int16_t t_avg_cmd;
@@ -740,5 +747,8 @@ void stabilization_altitude_run(bool_t enable_integrator) {
 
   INT32_QUAT_COMP(altitude_attitude_sp, q_h, q_v);
   INT32_QUAT_NORMALIZE(altitude_attitude_sp);
+
+  /*DEBUG REMOVE*/
+  alt_test3 = alpha_des_f;
 
 }

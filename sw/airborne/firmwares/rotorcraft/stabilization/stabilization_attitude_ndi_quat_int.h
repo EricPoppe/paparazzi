@@ -39,6 +39,9 @@
 extern float rate_test;
 extern float alt_test1;
 extern float alt_test2;
+extern float alt_test3;
+extern float alt_test4;
+extern float alt_test5;
 
 /* Definition of gain structs */
 

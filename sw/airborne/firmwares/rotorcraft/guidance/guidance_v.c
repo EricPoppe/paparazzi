@@ -35,6 +35,8 @@
 
 #include "math/pprz_algebra_int.h"
 
+/*DEBUG REMOVE*/
+#include "mcu_periph/sys_time.h"
 
 /* error if some gains are negative */
 #if (GUIDANCE_V_HOVER_KP < 0) ||                   \
@@ -236,6 +238,31 @@ void guidance_v_notify_in_flight( bool_t in_flight) {
 
 
 void guidance_v_run(bool_t in_flight) {
+
+//	/*DEBUG REMOVE - step of -1 every 20 seconds after 1 min */
+//	int8_t time_counter_test;
+//	uint32_t start_time_test;
+//	uint32_t time_test;
+//
+//	if (time_counter_test == 0)
+//		start_time = sys_time.nb_sec;
+//
+//	time_counter_test = 1;
+//
+//	time_test = (sys_time.nb_sec - start_time_test);
+//
+//	if (time_test > 60 && time_test < 70)
+//		guidance_v_z_sp = BFP_OF_REAL(-2.5,INT32_POS_FRAC);
+//	else if (time_test >= 70 && time_test < 80)
+//		guidance_v_z_sp = BFP_OF_REAL(-1.5,INT32_POS_FRAC);
+//	else if (time_test >= 80 && time_test < 90)
+//		guidance_v_z_sp = BFP_OF_REAL(-2.5,INT32_POS_FRAC);
+//	else if (time_test >= 90 && time_test < 100)
+//		guidance_v_z_sp = BFP_OF_REAL(-1.5,INT32_POS_FRAC);
+//	else if (time_test >= 100 && time_test < 110)
+//		guidance_v_z_sp = BFP_OF_REAL(-2.5,INT32_POS_FRAC);
+//	else
+//		guidance_v_z_sp = BFP_OF_REAL(-1.5,INT32_POS_FRAC);
 
   // FIXME... SATURATIONS NOT TAKEN INTO ACCOUNT
   // AKA SUPERVISION and co

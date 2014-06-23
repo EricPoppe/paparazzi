@@ -19,7 +19,7 @@
       <message name="I2C_ERRORS" 			period="4.1"/>
       <message name="UART_ERRORS" 			period="3.1"/>
              <!-- control loop test messages REMOVE -->
-      <message name="CONTROL_TEST" 			period=".01"/>
+      <message name="CONTROL_TEST" 			period=".002"/>
       <!--message name="ARDUINO_MEASURMENTS"	period="0.01"/-->
     </mode>
 

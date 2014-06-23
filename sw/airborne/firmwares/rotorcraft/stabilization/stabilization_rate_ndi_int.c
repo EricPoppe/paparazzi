@@ -275,8 +275,8 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   int32_t cpsi, spsi;
   cpsi = TRIG_BFP_OF_REAL(cosf(psi_f));
   spsi = TRIG_BFP_OF_REAL(sinf(psi_f));
-  rate_ref_ff_body.p = INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.p,cpsi,INT32_TRIG_FRAC) + INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.q,spsi,INT32_TRIG_FRAC);
-  rate_ref_ff_body.q = INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.q,cpsi,INT32_TRIG_FRAC) - INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.p,spsi,INT32_TRIG_FRAC);
+  rate_ref_ff_body.p = INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.p,cpsi,INT32_TRIG_FRAC) - INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.q,spsi,INT32_TRIG_FRAC);
+  rate_ref_ff_body.q = INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.q,cpsi,INT32_TRIG_FRAC) + INT_MULT_RSHIFT(stab_rate_ref_ff_scaled.p,spsi,INT32_TRIG_FRAC);
   rate_ref_ff_body.r = stab_rate_ref_ff_scaled.r;
 
   rate_ndi_run_ff(&virtual_input_ff, &rate_ndi_gains, &rate_ref_ff_body);
@@ -288,6 +288,11 @@ void stabilization_rate_ndi_run(bool_t enable_integrator) {
   virtual_input.p = virtual_input_fb.p + virtual_input_ff.p;
   virtual_input.q = virtual_input_fb.q + virtual_input_ff.q;
   virtual_input.r = virtual_input_fb.r + virtual_input_ff.r;
+//
+//  /*DEBUG REMOVE*/
+//  virtual_input.p = 0;
+//  virtual_input.q = BFP_OF_REAL(39.9,VIRTUAL_INPUT_FRAC);
+//  virtual_input.r = 0;
 
   /* compute thrust from desired angular acceleration */
   rate_ndi_run_accel_to_thrust(&rate_thrust_diff, &virtual_input);

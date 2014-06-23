@@ -16,7 +16,7 @@
         <dl_setting var="tdiff_yaw_sp" min="-2" step="0.1" max="2"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="tdiff sp" param="STABILIZATION_ATTITUDE_NDI_TDIFF_SP"/>
         <dl_setting var="phi_sp" min="-1.5" step="0.01" max="1.5"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="phi sp" param="STABILIZATION_ATTITUDE_NDI_PHI_SP"/>
         <dl_setting var="theta_sp" min="-1.5" step="0.01" max="1.5"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="theta sp" param="STABILIZATION_ATTITUDE_NDI_THETA_SP"/>
-        <dl_setting var="psi_sp" min="-1.57" step="0.01" max="1.57"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="psi sp" param="STABILIZATION_ATTITUDE_NDI_PSI_SP"/>
+        <dl_setting var="psi_sp" min="-3.1" step="0.1" max="3.1"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="psi sp" param="STABILIZATION_ATTITUDE_NDI_PSI_SP"/>
         <dl_setting var="phi_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="phi d sp" param="STABILIZATION_ATTITUDE_NDI_PHI_D_SP"/>
         <dl_setting var="theta_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="theta d sp" param="STABILIZATION_ATTITUDE_NDI_THETA_D_SP"/>
         <dl_setting var="psi_d_sp" min="-10" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="psi d sp" param="STABILIZATION_ATTITUDE_NDI_PSI_D_SP"/>
@@ -29,10 +29,10 @@
       <dl_setting var="attitude_ndi_gains.d.tilt" min="0" step="1" max="8000"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="dgain tilt" param="STABILIZATION_ATTITUDE_NDI_TILT_DGAIN"/>
       <dl_setting var="attitude_ndi_gains.p.yaw" min="0" step="1" max="4000"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="pgain yaw" param="STABILIZATION_ATTITUDE_NDI_YAW_PGAIN"/>
       <dl_setting var="attitude_ndi_gains.d.yaw" min="0" step="1" max="4000"   module="stabilization/stabilization_attitude_ndi_quat_int" shortname="dgain yaw" param="STABILIZATION_ATTITUDE_NDI_YAW_DGAIN"/>
-      <dl_setting var="stab_att_ref_model.omega.p" min="0" step="1" max="500"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="omega p" param="STABILIZATION_ATTITUDE_REF_OMEGA_P"/>
-      <dl_setting var="stab_att_ref_model.zeta.p" min="0" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="zeta p" param="STABILIZATION_ATTITUDE_REF_ZETA_P"/>
-      <dl_setting var="stab_att_ref_model.omega.q" min="0" step="1" max="500"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="omega q" param="STABILIZATION_ATTITUDE_REF_OMEGA_Q"/>
-      <dl_setting var="stab_att_ref_model.zeta.q" min="0" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="zeta q" param="STABILIZATION_ATTITUDE_REF_ZETA_Q"/>  
+      <dl_setting var="stab_att_ref_model_ndi.omega.p" min="0" step="1" max="500"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="omega p" param="STABILIZATION_ATTITUDE_REF_OMEGA_P"/>
+      <dl_setting var="stab_att_ref_model_ndi.zeta.p" min="0" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="zeta p" param="STABILIZATION_ATTITUDE_REF_ZETA_P"/>
+      <dl_setting var="stab_att_ref_model_ndi.omega.q" min="0" step="1" max="500"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="omega q" param="STABILIZATION_ATTITUDE_REF_OMEGA_Q"/>
+      <dl_setting var="stab_att_ref_model_ndi.zeta.q" min="0" step="0.1" max="10"   module="stabilization/stabilization_attitude_ndi_ref_quat_int" shortname="zeta q" param="STABILIZATION_ATTITUDE_REF_ZETA_Q"/>  
     </dl_settings>
 
 	<dl_settings NAME="Att rate Loop">
@@ -98,7 +98,7 @@
       <dl_setting var="small_outer_ref_model.zeta" min="0" step="0.1" max="10"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta sm.out." param="STABILIZATION_ALTITUDE_NDI_SMALL_Z_REF_ZETA"/>
       
       <dl_setting var="large_outer_ref_model.omega" min="0" step="1" max="500"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="omega l.out." param="STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_OMEGA"/>
-      <dl_setting var="large_outer_ref_model.zeta" min="0" step="0.1" max="10"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta l.out." param="STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA"/>    
+      <dl_setting var="large_outer_ref_model.zeta" min="0" step="0.1" max="20"   module="stabilization/stabilization_altitude_ndi_quat_int" shortname="zeta l.out." param="STABILIZATION_ALTITUDE_NDI_LARGE_Z_REF_ZETA"/>    
     </dl_settings>
   </dl_settings>
 </settings>
