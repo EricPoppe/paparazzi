@@ -55,6 +55,7 @@
 #define AP_MODE_FORWARD           16
 #define AP_MODE_NAV_NDI			      17	// also use stabilization_ndi!!
 #define AP_MODE_ATTITUDE_Z_HOLD_NDI 18 // also use stabilization_ndi!!
+#define AP_MODE_TEST_PPRZ 20 // DEBUG REMOVE!!
 
 /*REMOVE DEBUG*/
 #define AP_MODE_TUNE_NDI					19

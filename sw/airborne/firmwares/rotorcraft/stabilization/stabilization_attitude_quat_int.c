@@ -33,6 +33,29 @@
 #include "state.h"
 #include "generated/airframe.h"
 
+/*DEBUG REMOVE*/
+#include "firmwares/rotorcraft/guidance/guidance_v.h"
+#include "subsystems/actuators/motor_mixing.h"
+float test1;
+float test2;
+float test3;
+float test4;
+float test5;
+float test6;
+float test7;
+float test8;
+float test9;
+float test10;
+float test11;
+float test12;
+float test13;
+float test14;
+float test15;
+float test16;
+float test17;
+float test18;
+float test19;
+
 struct Int32AttitudeGains stabilization_gains = {
   {STABILIZATION_ATTITUDE_PHI_PGAIN, STABILIZATION_ATTITUDE_THETA_PGAIN, STABILIZATION_ATTITUDE_PSI_PGAIN },
   {STABILIZATION_ATTITUDE_PHI_DGAIN, STABILIZATION_ATTITUDE_THETA_DGAIN, STABILIZATION_ATTITUDE_PSI_DGAIN },
@@ -110,15 +133,41 @@ static void send_att_ref(void) {
 static void send_ahrs_ref_quat(void) {
   struct Int32Quat* quat = stateGetNedToBodyQuat_i();
   DOWNLINK_SEND_AHRS_REF_QUAT(DefaultChannel, DefaultDevice,
-      &stab_att_ref_quat.qi,
-      &stab_att_ref_quat.qx,
-      &stab_att_ref_quat.qy,
-      &stab_att_ref_quat.qz,
-      &(quat->qi),
-      &(quat->qx),
-      &(quat->qy),
-      &(quat->qz));
+															&stab_att_ref_quat.qi,
+															&stab_att_ref_quat.qx,
+															&stab_att_ref_quat.qy,
+															&stab_att_ref_quat.qz,
+															&(quat->qi),
+															&(quat->qx),
+															&(quat->qy),
+															&(quat->qz));
 }
+
+/* debug messages REMOVE*/
+static void send_control_test(void) {
+	DOWNLINK_SEND_CONTROL_TEST(DefaultChannel, DefaultDevice,
+														&test1 ,
+														&test2 ,
+														&test3 ,
+														&test4 ,
+														&test5 ,
+														&test6 ,
+														&test7 ,
+														&test8 ,
+														&test9 ,
+														&test10,
+														&test11,
+														&test12,
+														&test13,
+														&test14,
+														&test15,
+														&test16,
+														&test17,
+														&test18,
+														&test19
+	);
+}
+
 #endif
 
 void stabilization_attitude_init(void) {
@@ -132,11 +181,12 @@ void stabilization_attitude_init(void) {
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE", send_att);
   register_periodic_telemetry(DefaultPeriodic, "STAB_ATTITUDE_REF", send_att_ref);
   register_periodic_telemetry(DefaultPeriodic, "AHRS_REF_QUAT", send_ahrs_ref_quat);
+  /* debug messages REMOVE*/
+  register_periodic_telemetry(DefaultPeriodic, "CONTROL_TEST", send_control_test);
 #endif
 }
 
 void stabilization_attitude_enter(void) {
-
   /* reset psi setpoint to current psi angle */
   stab_att_sp_euler.psi = stabilization_attitude_get_heading_i();
 
@@ -273,6 +323,32 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   BoundAbs(stabilization_cmd[COMMAND_ROLL], MAX_PPRZ);
   BoundAbs(stabilization_cmd[COMMAND_PITCH], MAX_PPRZ);
   BoundAbs(stabilization_cmd[COMMAND_YAW], MAX_PPRZ);
+
+  /*DEBUG REMOVE prepare test message*/
+
+  struct Int32Quat* quat = stateGetNedToBodyQuat_i();
+	int32_t alt_test = stateGetPositionNed_i()->z;
+
+  test1 =  FLOAT_OF_BFP(stab_att_ref_quat.qi,INT32_QUAT_FRAC);
+  test2 =  FLOAT_OF_BFP(stab_att_ref_quat.qx,INT32_QUAT_FRAC);
+  test3 =  FLOAT_OF_BFP(stab_att_ref_quat.qy,INT32_QUAT_FRAC);
+  test4 =  FLOAT_OF_BFP(stab_att_ref_quat.qz,INT32_QUAT_FRAC);
+  test5 =  FLOAT_OF_BFP(stab_att_sp_quat.qi,INT32_QUAT_FRAC);
+  test6 =  FLOAT_OF_BFP(stab_att_sp_quat.qx,INT32_QUAT_FRAC);
+  test7 =  FLOAT_OF_BFP(stab_att_sp_quat.qy,INT32_QUAT_FRAC);
+  test8 =  FLOAT_OF_BFP(stab_att_sp_quat.qz,INT32_QUAT_FRAC);
+  test9 =  FLOAT_OF_BFP((quat->qi),INT32_QUAT_FRAC);
+  test10 = FLOAT_OF_BFP((quat->qx),INT32_QUAT_FRAC);
+  test11 = FLOAT_OF_BFP((quat->qy),INT32_QUAT_FRAC);
+  test12 = FLOAT_OF_BFP((quat->qz),INT32_QUAT_FRAC);
+  test13 = FLOAT_OF_BFP(guidance_v_z_ref,INT32_POS_FRAC);
+  test14 = FLOAT_OF_BFP(guidance_v_z_sp,INT32_POS_FRAC);
+  test15 = FLOAT_OF_BFP(alt_test,INT32_POS_FRAC);
+  test16 = motor_mixing.commands[0];
+  test17 = motor_mixing.commands[1];
+  test18 = motor_mixing.commands[2];
+  test19 = motor_mixing.commands[3];
+
 }
 
 void stabilization_attitude_read_rc(bool_t in_flight, bool_t in_carefree, bool_t coordinated_turn) {
@@ -283,4 +359,13 @@ void stabilization_attitude_read_rc(bool_t in_flight, bool_t in_carefree, bool_t
   stabilization_attitude_read_rc_setpoint_quat_f(&q_sp, in_flight, in_carefree, coordinated_turn);
 #endif
   QUAT_BFP_OF_REAL(stab_att_sp_quat, q_sp);
+
+  /*DEBUG REMOVE test attitude*/
+  if (att_pprz_sp && autopilot_mode == AP_MODE_TEST_PPRZ && stabilization_pprz_override_on){
+  	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_pprz_sp/2.)*cosf(theta_pprz_sp/2.)*cosf(psi_pprz_sp/2.) + sinf(phi_pprz_sp/2.)*sinf(theta_pprz_sp/2.)*sinf(psi_pprz_sp/2.));
+  	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_pprz_sp/2.)*sinf(theta_pprz_sp/2.)*sinf(psi_pprz_sp/2.) + cosf(theta_pprz_sp/2.)*cosf(psi_pprz_sp/2.)*sinf(phi_pprz_sp/2.));
+  	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_pprz_sp/2.)*cosf(psi_pprz_sp/2.)*sinf(theta_pprz_sp/2.) + sinf(phi_pprz_sp/2.)*cosf(theta_pprz_sp/2.)*sinf(psi_pprz_sp/2.));
+  	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_pprz_sp/2.)*cosf(theta_pprz_sp/2.)*sinf(psi_pprz_sp/2.) - sinf(phi_pprz_sp/2.)*cosf(psi_pprz_sp/2.)*sinf(theta_pprz_sp/2.));
+  }
+
 }

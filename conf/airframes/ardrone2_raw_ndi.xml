@@ -149,12 +149,12 @@
 
     <!-- reference -->
     <define name="REF_OMEGA_P" value="100"/>
-    <define name="REF_ZETA_P" value="3.021"/>
+    <define name="REF_ZETA_P" value="3"/>
     <define name="REF_MAX_P" value="8000."/>
     <define name="REF_MAX_PDOT" value="RadOfDeg(8000.)"/>
 
-    <define name="REF_OMEGA_Q" value="101"/>
-    <define name="REF_ZETA_Q" value="3.032"/>
+    <define name="REF_OMEGA_Q" value="100"/>
+    <define name="REF_ZETA_Q" value="3"/>
     <define name="REF_MAX_Q" value="8000."/>
     <define name="REF_MAX_QDOT" value="RadOfDeg(8000.)"/>
 
@@ -180,6 +180,15 @@
     <define name="PHI_DDGAIN" value="0"/>
     <define name="THETA_DDGAIN" value="0"/>
     <define name="PSI_DDGAIN" value="52"/>
+    
+    <!-- DEBUG REMOVE values used by original pprz controller-->
+    <define name="OVERRIDE_ON" value="1"/> 
+    <define name="ATT_SP" value="1"/>
+    <define name="ALT_SP" value="0"/>
+    <define name="PHI_SP" value="0.006"/>
+    <define name="THETA_SP" value="0.708"/>
+    <define name="PSI_SP" value="2.79"/>
+    <define name="Z_SP" value="4.533"/>
   </section>
   
   <section name="STABILIZATION_ALTITUDE_NDI" prefix="STABILIZATION_ALTITUDE_NDI_">
@@ -207,7 +216,7 @@
     <define name="LARGE_INNER_IGAIN" value="400"/>
     <define name="LARGE_INNER_DGAIN" value="0"/>
     
-    <define name="LARGE_OUTER_PGAIN" value="93"/>
+    <define name="LARGE_OUTER_PGAIN" value="25"/>
     <define name="LARGE_OUTER_IGAIN" value="0"/>
     <define name="LARGE_OUTER_DGAIN" value="0"/>
      
@@ -226,16 +235,16 @@
     <define name="YAW_PGAIN" value="1000"/>
     <define name="YAW_DGAIN" value="0"/> 
     
-    <!-- DEBUG REMOVE -->
+    <!-- DEBUG REMOVE values used by ndi controller -->
     <define name="OVERRIDE_ON" value="1"/> 
-    <define name="ATT_SP" value="0"/>
+    <define name="ATT_SP" value="1"/>
     <define name="ATT_D_SP" value="0"/>
     <define name="ALT_SP" value="1"/>
     <define name="ALT_D_SP" value="0"/>
     <define name="PHI_SP" value="0.006"/>
     <define name="TAU" value="0"/>
     <define name="TDIFF_SP" value="0."/>
-    <define name="THETA_SP" value="0.7"/>
+    <define name="THETA_SP" value="0.708"/>
     <define name="PSI_SP" value="2.79"/>
     <define name="PHI_D_SP" value="0."/>
     <define name="THETA_D_SP" value="0.008"/>
@@ -288,8 +297,8 @@
   </section>
   
   <section name="QUAT_FLIGHT_MODE_TRANSITION" prefix="QUAT_FLIGHT_MODE_TRANSITION_">
-    <define name="LIMIT_LOW" value="0.5"/>
-    <define name="LIMIT_HIGH" value="0.55"/>
+    <define name="LIMIT_LOW" value="0.52"/>
+    <define name="LIMIT_HIGH" value="0.61"/>
   </section>
   
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">

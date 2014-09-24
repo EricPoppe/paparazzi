@@ -228,8 +228,8 @@ void stabilization_attitude_read_rc_roll_pitch_quat_f(struct FloatQuat* q) {
   /* orientation vector describing simultaneous rotation of roll/pitch */
   struct FloatVect3 ov;
   /*DEBUG REMOVE /3*/
-  ov.x = radio_control.values[RADIO_ROLL]/3 * STABILIZATION_ATTITUDE_SP_MAX_PHI / MAX_PPRZ;
-  ov.y = radio_control.values[RADIO_PITCH]/3 * STABILIZATION_ATTITUDE_SP_MAX_THETA / MAX_PPRZ;
+  ov.x = radio_control.values[RADIO_ROLL] * STABILIZATION_ATTITUDE_SP_MAX_PHI / MAX_PPRZ;
+  ov.y = radio_control.values[RADIO_PITCH] * STABILIZATION_ATTITUDE_SP_MAX_THETA / MAX_PPRZ;
   ov.z = 0.0;
 
   /* quaternion from that orientation vector */

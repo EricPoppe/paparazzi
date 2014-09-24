@@ -440,6 +440,7 @@ static void attitude_calc_vrest(void){
 	vsupply_rest = ((((c_cmd_2*((int64_t)attitude_t_avg_cmd*(int64_t)attitude_t_avg_cmd)) >> (INT64_C_BAT_FRAC - INT32_VREST_FRAC))
 			+ BFP_OF_REAL(electrical.vsupply,INT32_VREST_FRAC)/10) << INT32_VREST_FRAC)
 			/(BFP_OF_REAL(1,INT32_VREST_FRAC) - ((c_cmd*((int64_t)attitude_t_avg_cmd)) >> (INT64_C_BAT_FRAC - INT32_VREST_FRAC)));
+
 }
 
 /* calculate maximum thrust */
@@ -908,15 +909,8 @@ void stabilization_attitude_run(bool_t enable_integrator) {
   	attitude_thrust_command.T4 = 0;
   }
 
-//  test1 = attitude_thrust_command.T1;
-//  test2 = attitude_thrust_command.T2;
-//  test3 = attitude_thrust_command.T3;
-//  test4 = attitude_thrust_command.T4;
-//
-//  test1 = v_h_att.p;
-//  test2 = v_h_att.q;
+  //  /*DEBUG REMOVE test messages*/
 
-//  /*DEBUG REMOVE data acquisition*/
 //    struct Int32Eulers testje;
 //    INT32_EULERS_OF_QUAT(testje,stab_att_ref_quat);
 //    test1 = FLOAT_OF_BFP(testje.phi,INT32_ANGLE_FRAC);
@@ -937,26 +931,26 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test14 = alt_test2;
 //  test15 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
 
-//  /*DEBUG REMOVE data acquisition*/
-//  test1 = FLOAT_OF_BFP(stab_att_ref_quat.qi,INT32_QUAT_FRAC);
-//  test2 = FLOAT_OF_BFP(stab_att_ref_quat.qx,INT32_QUAT_FRAC);
-//  test3 = FLOAT_OF_BFP(stab_att_ref_quat.qy,INT32_QUAT_FRAC);
-//  test4 = FLOAT_OF_BFP(stab_att_ref_quat.qz,INT32_QUAT_FRAC);
-//  test5 = FLOAT_OF_BFP(stab_att_sp_quat.qi,INT32_QUAT_FRAC);
-//  test6 = FLOAT_OF_BFP(stab_att_sp_quat.qx,INT32_QUAT_FRAC);
-//  test7 = FLOAT_OF_BFP(stab_att_sp_quat.qy,INT32_QUAT_FRAC);
-//  test8 = FLOAT_OF_BFP(stab_att_sp_quat.qz,INT32_QUAT_FRAC);
-//  test9 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC);
-//  test10 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC);
-//  test11 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC);
-//  test12 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC);
-//  test13 = alt_test1;
-//  test14 = alt_test2;
-//  test15 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
-//  test16 = thrust_command[0];
-//  test17 = thrust_command[1];
-//  test18 = thrust_command[2];
-//  test19 = thrust_command[3];
+  /*DEBUG REMOVE data acquisition*/
+  test1 = FLOAT_OF_BFP(stab_att_ref_quat.qi,INT32_QUAT_FRAC);
+  test2 = FLOAT_OF_BFP(stab_att_ref_quat.qx,INT32_QUAT_FRAC);
+  test3 = FLOAT_OF_BFP(stab_att_ref_quat.qy,INT32_QUAT_FRAC);
+  test4 = FLOAT_OF_BFP(stab_att_ref_quat.qz,INT32_QUAT_FRAC);
+  test5 = FLOAT_OF_BFP(stab_att_sp_quat.qi,INT32_QUAT_FRAC);
+  test6 = FLOAT_OF_BFP(stab_att_sp_quat.qx,INT32_QUAT_FRAC);
+  test7 = FLOAT_OF_BFP(stab_att_sp_quat.qy,INT32_QUAT_FRAC);
+  test8 = FLOAT_OF_BFP(stab_att_sp_quat.qz,INT32_QUAT_FRAC);
+  test9 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qi,INT32_QUAT_FRAC);
+  test10 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qx,INT32_QUAT_FRAC);
+  test11 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qy,INT32_QUAT_FRAC);
+  test12 = FLOAT_OF_BFP(stateGetNedToBodyQuat_i()->qz,INT32_QUAT_FRAC);
+  test13 = alt_test1;
+  test14 = alt_test2;
+  test15 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
+  test16 = thrust_command[0];
+  test17 = thrust_command[1];
+  test18 = thrust_command[2];
+  test19 = thrust_command[3];
 
 //  /*DEBUG REMOVE test*/
 //  test1 = 0;
@@ -1042,7 +1036,7 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test4 = ANGLE_FLOAT_OF_BFP(testje2.theta);
 //  test5 = ANGLE_FLOAT_OF_BFP(stateGetNedToBodyEulers_i()->theta);
 //  test6 = ANGLE_FLOAT_OF_BFP(testje.theta);
-//  test7 = FLOAT_OF_BFP(testje2.psi,INT32_ANGLE_FRAC);
+//  test7 = alt_test5;
 
 //  /*DEBUG REMOVE pch tilt test*/
 //  test1 = FLOAT_OF_BFP(rate_thrust_diff.roll,INT32_STAB_ALT_T_FRAC);
@@ -1115,12 +1109,27 @@ void stabilization_attitude_run(bool_t enable_integrator) {
 //  test5 = 0;
 //  test6 = 0;
 //
-  /*DEBUG REMOVE z tuning */
-  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
-	test2 = alt_test1;
-  test3 = alt_test2;
-  test4 = alt_test3;
-  test5 = alt_test4;
+//  /*DEBUG REMOVE switch tuning*/
+//  struct Int32Eulers testje;
+//  INT32_EULERS_OF_QUAT(testje,stab_att_ref_quat);
+//  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
+//  test2 = alt_test1;
+//  test3 = alt_test2;
+//  struct Int32Eulers testje2;
+//  INT32_EULERS_OF_QUAT(testje2,stab_att_sp_quat);
+//  test4 = ANGLE_FLOAT_OF_BFP(testje2.theta);
+//  test5 = ANGLE_FLOAT_OF_BFP(stateGetNedToBodyEulers_i()->theta);
+//  test6 = ANGLE_FLOAT_OF_BFP(testje.theta);
+//  test7 = alt_test5;
+
+//
+//  /*DEBUG REMOVE z and zd tuning */
+//  test1 = FLOAT_OF_BFP(stateGetPositionNed_i()->z,INT32_POS_FRAC);
+//	test2 = alt_test1;
+//  test3 = alt_test2;
+//  test4 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
+//  test5 = alt_test3;
+//  test6 = alt_test4;
 
 //  /*DEBUG REMOVE vz tuning */
 //  test1 = FLOAT_OF_BFP(stateGetSpeedNed_i()->z,INT32_SPEED_FRAC);
@@ -1175,10 +1184,39 @@ void stabilization_attitude_read_rc(bool_t in_flight, bool_t in_carefree, bool_t
 
   /*DEBUG REMOVE tune attitude*/
   if (att_sp && autopilot_mode == AP_MODE_TUNE_NDI && stabilization_override_on){
+
+//  	/* DEBUG REMOVE going through switch */
+//  	if (time_counter == 0)
+//  		start_time = sys_time.nb_sec;
+
+//  	uint32_t time;
+//  	time_counter = 1;
+//  	time = sys_time.nb_sec - start_time;
+//
+//  	theta_sp = 0.52;
+//
+//  	if (time > 3.0)
+//  		theta_sp = 0.62;
+
+//  	/* DEBUG REMOVE step up down */
+//  	if (time_counter == 0)
+//  		start_time = sys_time.nb_sec;
+//
+//  	time_counter = 1;
+//
+//  	if (sys_time.nb_sec - start_time <= 4)
+//  		theta_sp = 0.52;
+//  	else
+//  		theta_sp = -0.52;
+
   	stab_att_sp_quat.qi = QUAT1_BFP_OF_REAL(cosf(phi_sp/2.)*cosf(theta_sp/2.)*cosf(psi_sp/2.) + sinf(phi_sp/2.)*sinf(theta_sp/2.)*sinf(psi_sp/2.));
   	stab_att_sp_quat.qx = QUAT1_BFP_OF_REAL(-cosf(phi_sp/2.)*sinf(theta_sp/2.)*sinf(psi_sp/2.) + cosf(theta_sp/2.)*cosf(psi_sp/2.)*sinf(phi_sp/2.));
   	stab_att_sp_quat.qy = QUAT1_BFP_OF_REAL(cosf(phi_sp/2.)*cosf(psi_sp/2.)*sinf(theta_sp/2.) + sinf(phi_sp/2.)*cosf(theta_sp/2.)*sinf(psi_sp/2.));
   	stab_att_sp_quat.qz = QUAT1_BFP_OF_REAL(cosf(phi_sp/2.)*cosf(theta_sp/2.)*sinf(psi_sp/2.) - sinf(phi_sp/2.)*cosf(psi_sp/2.)*sinf(theta_sp/2.));
+  }
+  else {
+//  	time_counter = 0;
+//  	theta_sp = 0;
   }
 
 }

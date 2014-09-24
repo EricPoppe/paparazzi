@@ -115,4 +115,14 @@ extern void guidance_v_run(bool_t in_flight);
     guidance_v_z_sum_err = 0;			\
   }
 
+/*DEBUG REMOVE*/
+extern bool_t stabilization_pprz_override_on;
+extern float phi_pprz_sp;
+extern float theta_pprz_sp;
+extern float psi_pprz_sp;
+extern float z_pprz_sp;
+extern bool_t att_pprz_sp;
+extern bool_t alt_pprz_sp;
+
+
 #endif /* GUIDANCE_V_H */

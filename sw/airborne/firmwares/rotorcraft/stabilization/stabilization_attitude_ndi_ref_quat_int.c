@@ -264,7 +264,7 @@ void stabilization_attitude_ref_update(void) {
   stab_att_ref_ff.q = stab_att_ref_rate.q  >> (INT64_ATT_REF_RATE_FRAC - INT32_RATE_FRAC);
   stab_att_ref_ff.r = stab_att_ref_rate.r  >> (INT64_ATT_REF_RATE_FRAC - INT32_RATE_FRAC);
 
-//  /*subtract v_h*/
+//  /*subtract v_h TODO PCH IN PROPER FRAME*/
 //  stab_att_ref_rate.p = stab_att_ref_rate.p - (((int64_t)(v_h_att.p)) << (INT64_ATT_REF_RATE_FRAC - INT32_RATE_FRAC));
 //  stab_att_ref_rate.q = stab_att_ref_rate.q - (((int64_t)(v_h_att.q)) << (INT64_ATT_REF_RATE_FRAC - INT32_RATE_FRAC));
 //  stab_att_ref_rate.r = stab_att_ref_rate.r - (((int64_t)(v_h_att.r)) << (INT64_ATT_REF_RATE_FRAC - INT32_RATE_FRAC));

@@ -14,7 +14,7 @@
       <subsystem name="radio_control" type="ppm"/>
     </target>
 
-    <define name="USE_SONAR" value="TRUE"/>
+    <define name="USE_SONAR" value="FALSE"/>
 
 	<!-- Subsystem section -->
     <subsystem name="motor_mixing"/>
@@ -77,14 +77,14 @@
 	<define name="ACCEL_X_SENS" value="20.0703385955" integer="16"/>
 	<define name="ACCEL_Y_SENS" value="19.2849915392" integer="16"/>
 	<define name="ACCEL_Z_SENS" value="19.5104041668" integer="16"/>
-
+	
     <!-- Magneto calibration -->
-    <define name="MAG_X_NEUTRAL" value="0"/>
-    <define name="MAG_Y_NEUTRAL" value="0"/>
-    <define name="MAG_Z_NEUTRAL" value="-180"/>
-    <define name="MAG_X_SENS" value="16." integer="16"/>
-    <define name="MAG_Y_SENS" value="16." integer="16"/>
-    <define name="MAG_Z_SENS" value="16." integer="16"/>
+	<define name="MAG_X_NEUTRAL" value="94"/>
+	<define name="MAG_Y_NEUTRAL" value="6"/>
+	<define name="MAG_Z_NEUTRAL" value="-23"/>
+	<define name="MAG_X_SENS" value="14.3430231098" integer="16"/>
+	<define name="MAG_Y_SENS" value="14.4152872622" integer="16"/>
+	<define name="MAG_Z_SENS" value="15.2458297248" integer="16"/>
 
     <!-- Magneto current calibration -->
     <define name="MAG_X_CURRENT_COEF" value="0.0"/>
@@ -100,13 +100,13 @@
   <!-- http://paparazzi.enac.fr/wiki/Subsystem/ahrs#Local_Magnetic_Field -->
   <section name="AHRS" prefix="AHRS_">
     <!-- Toulouse -->
-    <define name="H_X" value="0.513081"/>
+    <!--define name="H_X" value="0.513081"/>
     <define name="H_Y" value="-0.00242783"/>
-    <define name="H_Z" value="0.858336"/>
+    <define name="H_Z" value="0.858336"/-->
     <!-- Delft -->
-    <!--define name="H_X" value="0.3892503"/>
+    <define name="H_X" value="0.3892503"/>
     <define name="H_Y" value="0.0017972"/>
-    <define name="H_Z" value="0.9211303"/ -->
+    <define name="H_Z" value="0.9211303"/>
   </section>
 
   <section name="INS" prefix="INS_">
@@ -141,8 +141,8 @@
 
   <section name="STABILIZATION_ATTITUDE" prefix="STABILIZATION_ATTITUDE_">
     <!-- setpoints -->
-    <define name="SP_MAX_PHI" value="45" unit="deg"/>
-    <define name="SP_MAX_THETA" value="45" unit="deg"/>
+    <define name="SP_MAX_PHI" value="80" unit="deg"/>
+    <define name="SP_MAX_THETA" value="80" unit="deg"/>
     <define name="SP_MAX_R" value="600" unit="deg/s"/>
     <define name="DEADBAND_A" value="0"/>
     <define name="DEADBAND_E" value="0"/>
@@ -181,6 +181,15 @@
     <define name="PHI_DDGAIN" value="0"/>
     <define name="THETA_DDGAIN" value="0"/>
     <define name="PSI_DDGAIN" value="52"/>
+    
+    <!-- DEBUG REMOVE -->
+    <define name="OVERRIDE_ON" value="1"/> 
+    <define name="ATT_SP" value="1"/>
+    <define name="ALT_SP" value="0"/>
+    <define name="PHI_SP" value="0.006"/>
+    <define name="THETA_SP" value="0.708"/>
+    <define name="PSI_SP" value="2.79"/>
+    <define name="Z_SP" value="4.533"/>
   </section>
 
   <section name="GUIDANCE_V" prefix="GUIDANCE_V_">
@@ -214,9 +223,9 @@
   </section>
 
   <section name="AUTOPILOT">
-    <define name="MODE_STARTUP" value="AP_MODE_NAV"/>
-    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_DIRECT"/>
-    <define name="MODE_AUTO1" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_STARTUP" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_MANUAL" value="AP_MODE_ATTITUDE_Z_HOLD"/>
+    <define name="MODE_AUTO1" value="AP_MODE_TEST_PPRZ"/>
     <define name="MODE_AUTO2" value="AP_MODE_ATTITUDE_Z_HOLD"/>
   </section>
 

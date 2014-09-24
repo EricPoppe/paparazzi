@@ -1,7 +1,7 @@
 <!DOCTYPE settings SYSTEM "../settings.dtd">
 
 <settings>
-  <dl_settings>
+  <dl_settings>  
 
     <dl_settings NAME="Att Loop">
       <dl_setting var="stabilization_gains.p.x" min="1" step="1" max="8000"   module="stabilization/stabilization_attitude_common_int" shortname="pgain phi" param="STABILIZATION_ATTITUDE_PHI_PGAIN"/>

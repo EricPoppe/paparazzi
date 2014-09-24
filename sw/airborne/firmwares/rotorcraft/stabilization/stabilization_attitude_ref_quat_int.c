@@ -44,8 +44,8 @@ struct Int32Eulers stab_att_sp_euler;
 struct Int32Quat   stab_att_sp_quat;
 struct Int32Eulers stab_att_ref_euler;
 struct Int32Quat   stab_att_ref_quat;
-struct Int32Rates  stab_att_ref_rate;
-struct Int32Rates  stab_att_ref_accel;
+struct Int64Rates  stab_att_ref_rate;
+struct Int64Rates  stab_att_ref_accel;
 
 struct FloatRefModel stab_att_ref_model = {
   {STABILIZATION_ATTITUDE_REF_OMEGA_P, STABILIZATION_ATTITUDE_REF_OMEGA_Q, STABILIZATION_ATTITUDE_REF_OMEGA_R},
